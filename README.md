@@ -31,19 +31,19 @@
 
 ## JDBC 적용 기능
 
-| 기능 | 적용 테이블 | SQL |
-| --- | --- | --- |
-| 회원가입 | users | INSERT |
-| 로그인 | users | SELECT |
-| 프로필 조회 | users | SELECT |
-| 프로필 수정 | users | UPDATE |
-| 계정 비활성화 | users | UPDATE |
-| 계정 삭제 | users | DELETE |
-| 식단 조회 | diet_logs, diet_log_items | SELECT |
-| 식단 등록 | diet_logs, diet_log_items | INSERT |
-| 식단 수정 | diet_logs, diet_log_items | UPDATE / DELETE / INSERT |
-| 식단 삭제 | diet_logs | DELETE |
-| 음식 조회 | food_nutrition | SELECT |
+| 기능          | 적용 테이블               | SQL                      |
+| ------------- | ------------------------- | ------------------------ |
+| 회원가입      | users                     | INSERT                   |
+| 로그인        | users                     | SELECT                   |
+| 프로필 조회   | users                     | SELECT                   |
+| 프로필 수정   | users                     | UPDATE                   |
+| 계정 비활성화 | users                     | UPDATE                   |
+| 계정 삭제     | users                     | DELETE                   |
+| 식단 조회     | diet_logs, diet_log_items | SELECT                   |
+| 식단 등록     | diet_logs, diet_log_items | INSERT                   |
+| 식단 수정     | diet_logs, diet_log_items | UPDATE / DELETE / INSERT |
+| 식단 삭제     | diet_logs                 | DELETE                   |
+| 음식 조회     | food_nutrition            | SELECT                   |
 
 ---
 
@@ -62,3 +62,14 @@
 ```text
 demo@yumyam.com
 Demo1234!
+```
+
+## ERD 와 MySQL Workbench 파일
+
+- [./assets/ssafy_yumyumcoach.mwb](./assets/ssafy_yumyumcoach.mwb)
+- [./assets/ssafy_yumyumcoach.png](./assets/ssafy_yumyumcoach.png)
+- [./assets/ssafy_yumyumcoach.sql](./assets/ssafy_yumyumcoach.sql)
+
+### ERD 미리 보기
+
+![](./assets/ssafy_yumyumcoach.png)
