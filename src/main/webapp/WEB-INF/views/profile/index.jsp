@@ -1,5 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="com.yamyam.model.User,com.yamyam.model.DailyGoal,com.yamyam.util.ViewHelper" %>
+<%@ page import="com.ssafy.yumyum.model.User,com.ssafy.yumyum.model.DailyGoal,com.ssafy.yumyum.util.ViewHelper" %>
 <%@ include file="../common/header.jspf" %>
 <%@ include file="../common/navbar.jspf" %>
 <%@ include file="../common/flash.jspf" %>

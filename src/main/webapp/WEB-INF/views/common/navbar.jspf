@@ -1,4 +1,4 @@
-<%@ page import="com.yamyam.model.User" %>
+<%@ page import="com.ssafy.yumyum.model.User" %>
 <%
 User navUser = (User) request.getAttribute("currentUser");
 String activeNav = (String) request.getAttribute("activeNav");

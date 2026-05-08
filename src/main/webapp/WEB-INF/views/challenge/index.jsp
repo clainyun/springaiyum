@@ -1,5 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="java.util.List,java.util.Map,com.yamyam.model.Challenge,com.yamyam.model.ChallengeMembership,com.yamyam.model.ChallengeParticipant,com.yamyam.model.User,com.yamyam.util.ViewHelper" %>
+<%@ page import="java.util.List,java.util.Map,com.ssafy.yumyum.model.Challenge,com.ssafy.yumyum.model.ChallengeMembership,com.ssafy.yumyum.model.ChallengeParticipant,com.ssafy.yumyum.model.User,com.ssafy.yumyum.util.ViewHelper" %>
 <%@ include file="../common/header.jspf" %>
 <%@ include file="../common/navbar.jspf" %>
 <%@ include file="../common/flash.jspf" %>

@@ -1,5 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="java.util.List,java.util.Set,com.yamyam.model.Meal,com.yamyam.model.FoodItem,com.yamyam.model.FoodRecommendation,com.yamyam.util.ViewHelper" %>
+<%@ page import="java.util.List,java.util.Set,com.ssafy.yumyum.model.Meal,com.ssafy.yumyum.model.FoodItem,com.ssafy.yumyum.model.FoodRecommendation,com.ssafy.yumyum.util.ViewHelper" %>
 <%@ include file="../common/header.jspf" %>
 <%@ include file="../common/navbar.jspf" %>
 <%@ include file="../common/flash.jspf" %>
