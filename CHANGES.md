@@ -1,3 +1,4 @@
-# 기존 것에서 새로 작성한 부분
+# Changes
 
-- model DTO들에 Lombok `@Data` 적용
+- Model DTOs now use Lombok `@Data`.
+- Final DB schema is now standardized in `SSAFY_COACH_Schema.sql`: `users` was added, `diet_logs.meal_type` and `diet_log_items.selected_grams` were added, and `food_nutrition` stays in its original lecture-provided structure.
