@@ -1,0 +1,17 @@
+<%
+String flashMessage = (String) request.getAttribute("flashMessage");
+String flashType = (String) request.getAttribute("flashType");
+String errorMessage = (String) request.getAttribute("errorMessage");
+String bootstrapFlash = "success".equals(flashType) ? "success"
+    : "warning".equals(flashType) ? "warning"
+    : "info".equals(flashType) ? "info"
+    : "danger".equals(flashType) ? "danger" : "secondary";
+%>
+<div class="container mt-4">
+  <% if (flashMessage != null) { %>
+  <div class="alert alert-<%= bootstrapFlash %>"><%= flashMessage %></div>
+  <% } %>
+  <% if (errorMessage != null) { %>
+  <div class="alert alert-danger"><%= errorMessage %></div>
+  <% } %>
+</div>
