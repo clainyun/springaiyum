@@ -1,629 +1,458 @@
-# dbyum 프로젝트 조사 보고서
+# dbyum 프로젝트 재조사 보고서
 
-작성 기준일: 2026-05-08
-조사 범위: `c:\Users\SSAFY\git\dbyum` 현재 작업 디렉터리 전체
+작성일: 2026-05-08  
+조사 기준: `c:\Users\SSAFY\git\dbyum` 현재 작업 트리
 
-## 한눈에 보는 결론
+## 요약
 
-- 이 프로젝트는 `Spring` 없이 `Jakarta Servlet + JSP + 수동 MVC`로 구성된 식단/소셜/챌린지 웹앱이다.
-- 런타임 구조는 `controller -> service -> repository -> model` 계층이 비교적 선명하며, `AppContainer`가 정적 싱글턴 DI 역할을 한다.
-- 실제 실행 데이터는 현재 `SeedDataFactory` 기반의 메모리 저장소를 사용하며, 서버 재시작 시 초기화된다.
-- 동시에 `MySQL JDBC` 의존성과 `DBUtil`도 남아 있어 DB 전환 흔적이 보이지만, 현재 코드 경로에서는 사용되지 않는다.
-- 화면(JSP) 10개가 `com.ssafy.yumyum`이 아니라 `com.ssafy.yumyum` 패키지를 import하고 있어, 컨테이너에서 JSP 컴파일 시 실패할 가능성이 매우 높다.
-- 문서와 실제 코드가 많이 어긋나 있다. README는 `Java 8 / Tomcat 9 / com.ssafy.yumyum` 기준인데, 현재 작업 트리의 `pom.xml`은 `Java 17`, `war`, `Jakarta Servlet 6.1` 쪽으로 맞춰져 있다.
+이 프로젝트는 `Jakarta Servlet + JSP` 기반의 전통적인 MVC 웹앱이며, 식단 기록을 중심으로 인증, 프로필, 소셜, 챌린지, 커뮤니티, 규칙 기반 코치 기능을 제공한다.  
+코드 구조 자체는 `controller -> service -> repository -> model`로 비교적 명확하지만, 실행 환경과 문서, DB 자산, Eclipse/WTP 설정 사이에 아직 정리되지 않은 지점이 남아 있다.
 
-## 1. 현재 작업 트리 상태
+현재 기준으로 가장 중요한 사실은 다음과 같다.
 
-이번 조사는 "현재 디렉터리의 실제 상태"를 기준으로 했다. 즉, HEAD 기준 저장소뿐 아니라 아직 커밋되지 않은 로컬 변경도 포함한다.
+- 소스 코드의 패키지명은 `com.ssafy.yumyum`으로 일관된다.
+- JSP import의 예전 `com.yamyam` 잔재는 현재 `src` 기준으로 제거된 상태다.
+- 실제 런타임 데이터는 여전히 `SeedDataFactory` 기반 메모리 저장소를 쓴다.
+- `DBUtil`과 `src/main/resources/yumyum_schema.sql`이 다시 존재하지만, 현재 코드 경로에서는 DB를 사용하지 않는다.
+- `pom.xml`은 Java 21과 Jakarta 계열 의존성을 선언하지만 `packaging`이 명시되지 않아 Maven 기본값인 `jar`로 해석될 여지가 있다.
+- Eclipse 설정은 `Tomcat 11`, Java 21, `jst.web 5.0`인데 `web.xml`은 `6.0`이라 WTP 메타데이터가 완전히 정합하지 않다.
+- `src/test` 디렉터리는 생겼지만 실제 테스트 파일은 아직 없다.
 
-### 확인된 작업 트리 상태
+## 1. 현재 프로젝트 스냅샷
 
-- 조사 중 Git 작업 트리 상태가 한 차례 변동했다.
-- 적어도 Eclipse 계열 산출물로 보이는 `bin/`이 추적 밖에 존재함을 확인했다.
+루트 기준 주요 파일과 디렉터리는 다음과 같다.
 
-### 의미
+- `src/main/java`
+- `src/main/resources/yumyum_schema.sql`
+- `src/main/webapp`
+- `pom.xml`
+- `README.md`
+- `RESEARCH.md`
+- `.classpath`, `.project`, `.settings/`
+- `bin/`, `target/`
 
-- 현재 저장소는 완전히 깨끗한 상태가 아니며, 환경 의존적인 산출물과 로컬 변경이 섞일 수 있는 상태였다.
-- 따라서 "문서상 프로젝트"와 "지금 디렉터리에 놓인 프로젝트"를 분리해서 봐야 한다.
-- 이 보고서는 후자를 기준으로 작성했다.
+관찰 포인트:
 
-## 2. 프로젝트 개요
+- `git status --short` 기준 작업 트리는 현재 깨끗했다.
+- 다만 프로젝트 루트에는 Eclipse 관련 메타데이터와 산출물 디렉터리가 함께 존재한다.
+- `.gitignore`에는 `bin/`, `.settings/`, `.classpath`, `.project` 등이 들어 있어 로컬 IDE 중심 운영 흔적이 뚜렷하다.
 
-이 프로젝트는 식단 기록과 분석을 중심으로 다음 기능을 묶은 학습형 웹앱이다.
-
-- 인증: 로그인, 회원가입, 로그아웃
-- 홈 대시보드: 오늘 섭취 요약, 최근 식단, 챌린지 요약, 코치 요약
-- 식단: 목록, 상세, 등록, 수정, 삭제, 음식 추천, 영양 분석
-- 프로필: 개인정보 수정, 계정 비활성화, 계정 삭제
-- 소셜: 팔로우/언팔로우, 추천 사용자, 팔로워/팔로잉, 리더보드
-- 챌린지: 생성, 참여, 탈퇴, 진행률 업데이트, 삭제
-- 커뮤니티: 게시글/댓글 CRUD
-- AI 코치: 최근 식단 분석 기반 요약과 운동 루틴 제안
-
-루트에는 기능별 화면 시안으로 보이는 PNG도 함께 있다.
-
-- `메인화면.png`
-- `식단기록.png`
-- `소셜.png`
-- `챌린지.png`
-- `커뮤니티.png`
-
-## 3. 기술 스택과 실행 조건
+## 2. 기술 스택과 실행 환경
 
 ### 실제 코드 기준
 
-- 웹 프레임워크: `Jakarta Servlet`
-- 뷰: `JSP`
-- 스타일링: `Bootstrap 5`, `Bootstrap Icons`, 커스텀 CSS
-- 빌드 형태: `Maven WAR`
-- 데이터 저장: 현재는 `In-Memory Repository`
-- JDBC 흔적: `MySQL Connector/J`, `DBUtil`
+- 언어: Java
+- 웹 기술: Jakarta Servlet, JSP
+- UI: Bootstrap 5, Bootstrap Icons, 커스텀 CSS
+- 빌드 도구: Maven
+- 데이터 저장: In-memory repository
+- DB 흔적: MySQL JDBC, DBUtil, SQL 스키마 파일
 
-### 현재 `pom.xml`
+### `pom.xml` 기준
 
-현재 `pom.xml`은 다음 방향을 가진다.
+현재 `pom.xml`은 다음을 선언한다.
 
-- `packaging` = `war`
-- Java 컴파일 타깃 = `17`
-- `jakarta.servlet-api:6.1.0`
-- `jakarta.servlet.jsp-api:4.0.0`
-- JSTL API/구현체
-- MySQL 드라이버
-- Lombok
+- `groupId`: `com.ssafy`
+- `artifactId`: `dbyum`
+- `version`: `0.0.1-SNAPSHOT`
+- `maven.compiler.release`: `21`
+- 의존성:
+  - `org.projectlombok:lombok`
+  - `jakarta.servlet:jakarta.servlet-api:6.1.0`
+  - `jakarta.servlet.jsp:jakarta.servlet.jsp-api:4.0.0`
+  - `jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api:3.0.2`
+  - `org.glassfish.web:jakarta.servlet.jsp.jstl:3.0.1`
+  - `com.mysql:mysql-connector-j:8.3.0`
 
-### `web.xml` 기준 런타임 기대치
+### 설정상 주의점
 
-- `web-app version="6.1"`
-- JSP/JSPF 인코딩 UTF-8
-- welcome file은 `index.jsp`
+- `packaging`이 없다. Maven 기본 packaging은 `jar`이므로, 웹앱이라면 `war`를 명시하는 편이 안전하다.
+- `maven-war-plugin` 설정도 없다.
+- 즉, Eclipse WTP로는 돌아갈 수 있어도 Maven 중심 표준 웹 패키징 관점에서는 미완성이다.
 
-즉, 실제 웹 컨테이너는 `Jakarta EE` 네임스페이스를 이해해야 한다. README에 적힌 `Tomcat 9`는 `javax.servlet` 계열이라 현재 코드와 맞지 않는다.
+## 3. Eclipse / WTP 설정 상태
 
-## 4. 문서와 실제 코드의 불일치
+이번 재조사에서 코드보다 더 많이 바뀌었거나 중요한 부분은 IDE 설정이었다.
 
-이번 조사에서 가장 눈에 띈 부분 중 하나다.
+### `.classpath`
 
-### README와 현재 코드의 차이
+- `src/main/java`, `src/main/resources`
+- `src/test/java`, `src/test/resources`
+- `target/generated-sources/annotations`
+- `target/generated-test-sources/test-annotations`
+- JRE: `JavaSE-21`
+- 서버 런타임: `Apache Tomcat v11.0`
 
-- README는 `Java 8`을 안내하지만, 현재 `pom.xml`은 `Java 17`이다.
-- README는 `Tomcat 9 이상`을 말하지만, 실제 코드는 `jakarta.servlet.*`를 사용한다.
-- README는 패키지 경로를 `com/yamyam`으로 설명하지만, 실제 Java 패키지는 `com.ssafy.yumyum`이다.
-- README는 배포 URL을 `yamyam-mvc-1.0.0/home`로 예시하지만, 현재 `artifactId`와 `finalName`은 `dbyum` 계열이다.
+### `org.eclipse.wst.common.component`
 
-## 5. 디렉터리 구조 요약
+배포 어셈블리에는 다음이 포함된다.
 
-### Java 소스 수
+- `/src/main/webapp`
+- `/src/main/java` -> `/WEB-INF/classes`
+- `/src/main/resources` -> `/WEB-INF/classes`
+- `/src/test/java` -> `/WEB-INF/classes`
+- `/src/test/resources` -> `/WEB-INF/classes`
+- 생성 소스 디렉터리
+
+### 문제점
+
+- 테스트 소스가 웹 배포물에 포함되도록 잡혀 있다.
+- 지금은 테스트 파일이 비어 있어 영향이 작지만, 일반적으로는 잘못된 배포 설정이다.
+- `web.xml`은 6.0인데 facet은 `jst.web 5.0`이다.
+
+### `web.xml` vs facet
+
+- `web.xml`: Jakarta Web App `version="6.0"`
+- WTP facet: `jst.web version="5.0"`
+
+이 조합은 Eclipse의 JSP validator나 서버 어댑터에서 미묘한 경고를 만들 수 있다.
+
+## 4. README와 현재 코드의 불일치
+
+README는 여전히 예전 상태를 설명하고 있다.
+
+확인된 차이:
+
+- README는 `Java 8` 기준
+- 현재 `pom.xml`은 Java 21 기준
+- README는 `Tomcat 9 이상` 기준
+- 현재 코드는 `jakarta.servlet.*`를 사용하므로 Tomcat 10.1+/11 계열이 더 자연스럽다
+- README는 `com/yamyam` 패키지 경로를 설명
+- 실제 코드는 `com/ssafy/yumyum`
+- README의 예시 URL은 `yamyam-mvc-1.0.0`
+- 현재 프로젝트 식별자는 `dbyum`
+
+즉, README는 현행 코드베이스 설명서로 보기 어렵다.
+
+## 5. 소스 구조 요약
+
+현재 기준 파일 수는 다음과 같다.
 
 - controller: 8개
 - service: 7개
 - repository: 6개
 - model: 15개
-- util: 9개
-- 총 Java 파일: 45개
+- view(JSP/JSPF): 15개
 
-### View 수
+`src/test`는 존재하지만 실제 테스트 파일은 없다.
 
-- `WEB-INF/views` 하위 JSP/JSPF: 15개
-- 전체 `src/main/webapp` 파일 수: 18개
+## 6. 런타임 구조
 
-### 테스트
+### 전반 구조
 
-- `src/test` 디렉터리가 없다.
-- 자동 테스트 코드는 현재 없는 상태로 봐도 무방하다.
+프로젝트는 다음 흐름을 따른다.
 
-## 6. 런타임 아키텍처
+1. `@WebServlet` 컨트롤러가 요청 수신
+2. 서비스 계층이 비즈니스 로직 수행
+3. 저장소 계층이 메모리 컬렉션을 조작
+4. JSP가 최종 렌더링
 
-### 6.1 라우팅 방식
+### DI 방식
 
-각 컨트롤러가 `@WebServlet`으로 직접 URL을 매핑한다. 프런트 컨트롤러 패턴이 아니라 기능별 서블릿 분산 구조다.
+`AppContainer`가 정적 싱글턴으로 다음을 보관한다.
 
-주요 경로는 다음과 같다.
+- Repository 인스턴스
+- Service 인스턴스
+- SeedDataFactory 기반 초기 데이터
 
-| 경로 | 컨트롤러 | 역할 |
-| --- | --- | --- |
-| `/auth/login` | `AuthController` | 로그인 화면/처리 |
-| `/auth/signup` | `AuthController` | 회원가입 화면/처리 |
-| `/auth/logout` | `AuthController` | 로그아웃 |
-| `/home` | `HomeController` | 대시보드 |
-| `/meals` | `MealController` | 식단 목록 |
-| `/meals/new` | `MealController` | 식단 등록 |
-| `/meals/detail` | `MealController` | 식단 상세 |
-| `/meals/edit` | `MealController` | 식단 수정 |
-| `/meals/delete` | `MealController` | 식단 삭제 |
-| `/profile` | `ProfileController` | 프로필 조회/수정/계정 관리 |
-| `/social` | `SocialController` | 소셜 |
-| `/challenges` | `ChallengeController` | 챌린지 |
-| `/community` | `CommunityController` | 커뮤니티 |
-| `/coach` | `CoachController` | AI 코치 |
+스프링 없이 수동으로 구성된 서비스 로케이터 패턴에 가깝다.
 
-루트 `index.jsp`는 단순히 `/home`으로 리다이렉트한다.
+### 공통 컨트롤러 기반
 
-### 6.2 공통 베이스 컨트롤러
+`BaseController`는 다음 책임을 맡는다.
 
-`BaseController`가 모든 컨트롤러의 공통 부모다.
+- 요청/응답 UTF-8 처리
+- flash message 노출
+- JSP forward 렌더링
+- 로그인 사용자 강제
 
-- 요청/응답 인코딩을 UTF-8로 고정
-- `SessionUtils.exposeFlash(req)`로 flash message를 request attribute로 노출
-- `render()`가 `/WEB-INF/views/...jsp`로 forward
-- `redirect()`가 context path를 붙여 redirect
-- `requireLoginUser()`가 로그인 여부와 활성 사용자 여부를 검사
+## 7. 기능 지도
 
-즉, 인증이 필요한 화면은 각 컨트롤러가 `requireLoginUser()`를 호출하는 방식이다.
+### 인증
 
-### 6.3 수동 DI
-
-`AppContainer`가 애플리케이션 전역 싱글턴을 보관한다.
-
-- Repository 인스턴스를 정적으로 생성
-- Service 인스턴스를 정적으로 생성
-- `SeedDataFactory`로 초기 데이터 삽입
-
-스프링 같은 컨테이너는 없고, 사실상 "작은 서비스 로케이터"에 가깝다.
-
-## 7. 계층별 상세 분석
-
-### 7.1 Controller 계층
+- 로그인
+- 회원가입
+- 로그아웃
 
 특징:
 
-- URL 분기와 request parameter 파싱 담당
-- 권한 검사는 대부분 컨트롤러에서 1차 수행
-- ServiceResult를 받아 flash 또는 errorMessage로 UI 피드백 연결
+- 비밀번호는 평문 비교
+- 활성 사용자만 로그인 허용
 
-관찰:
+### 홈
 
-- `MealController`, `ProfileController`, `CommunityController`, `ChallengeController`, `SocialController`, `CoachController`, `HomeController`는 모두 로그인 필요
-- `AuthController`는 로그인된 사용자가 `/auth/login`, `/auth/signup` 접근 시 `/home`으로 보냄
-- 삭제/수정 관련 소유권 체크는 주로 서비스와 컨트롤러가 함께 담당
-
-### 7.2 Service 계층
-
-비즈니스 규칙이 가장 많이 몰린 레이어다.
-
-#### AuthService
-
-- 이메일 존재 여부 검사
-- 활성 계정 여부 검사
-- 비밀번호 평문 비교
-- 회원가입 시 최소한의 유효성 검사
-
-#### MealService
-
-핵심 역할:
-
-- 식단 필터링/정렬
-- 식단 생성/수정/삭제
-- 영양 요약 계산
-- 일일 목표 계산
-- 식단 점수화와 인사이트 생성
-- 음식 추천
-
-특히 중요한 규칙:
-
-- `calculateDailyGoal()`은 Harris-Benedict 계열 공식으로 보이는 BMR 계산 후 목표별 보정
-- `analyzeMeal()`은 칼로리 차이, 단백질 비중, 지방 비중으로 점수화
-- `recommendFoods()`는 남은 목표 칼로리와 음식 칼로리 차이를 기준으로 추천
-
-#### SocialService
-
-- 팔로잉/팔로워 목록
-- 추천 사용자
-- 팔로워 수 기반 리더보드
-
-추천/리더보드는 모두 "팔로워 수"가 핵심 기준이다.
-
-#### ChallengeService
-
-- 챌린지 생성
-- 참여/탈퇴
-- 진행률 업데이트
-- 생성자만 삭제 가능
-- 멤버십 맵/참가자 맵 생성
-
-#### CommunityService
-
-- 카테고리별 게시글 목록
-- 게시글/댓글 CRUD
-- 게시글/댓글 작성자 맵 생성
-- 사용자의 식단 목록 조회
-
-#### CoachService
-
-여기는 진짜 AI 호출이 아니라 "규칙 기반 코칭 생성기"에 가깝다.
-
-- 최근 식단 3개 분석
-- 오늘 섭취 대비 요약 문구 생성
-- 목표(goal)에 따라 운동 세션 추천
-- 부족한 영양소나 챌린지 참여 상태를 바탕으로 next action 작성
-
-### 7.3 Repository 계층
-
-모든 저장소가 `Map` 또는 `List` 기반 메모리 저장소다.
-
-- `UserRepository`: `Map<String, User>`
-- `MealRepository`: `Map<String, Meal>`
-- `SocialRepository`: `Map<String, FollowRelation>`
-- `ChallengeRepository`: 챌린지/멤버십 각각 `Map`
-- `CommunityRepository`: 게시글/댓글 각각 `Map`
-- `FoodCatalogRepository`: 카탈로그 음식 `List`
-
-특징:
-
-- 대부분 `synchronized` 메서드 사용
-- 간단한 동시성 보호는 있지만, 트랜잭션 개념은 없음
-- 재시작 시 데이터 유지 안 됨
-
-### 7.4 Model 계층
-
-핵심 엔티티는 다음과 같다.
-
-- `User`
-- `Meal`
-- `FoodItem`
-- `NutritionSummary`
-- `DailyGoal`
-- `MealAnalysis`
-- `FollowRelation`
-- `Challenge`
-- `ChallengeMembership`
-- `ChallengeParticipant`
-- `CommunityPost`
-- `CommunityComment`
-- `CoachAdvice`
-- `WorkoutSession`
-- `FoodRecommendation`
-
-특이점:
-
-- `FoodItem.copyWithGrams()`가 100g 기준 영양값을 선택 중량 기준으로 환산한다.
-- `MealAnalysis`, `CoachAdvice`는 "계산 결과 DTO" 성격이 강하다.
-
-## 8. 기능별 조사
-
-### 8.1 인증
-
-흐름:
-
-- 로그인: 이메일 조회 -> 활성 상태 확인 -> 비밀번호 평문 비교
-- 회원가입: 이메일 형식/중복, 비밀번호 길이, 닉네임 검사
-- 로그아웃: 세션 invalidate 후 flash 설정
-
-주의점:
-
-- 비밀번호 해시가 없다.
-- SeedDataFactory가 평문 비밀번호를 사용한다.
-
-### 8.2 홈 대시보드
-
-구성 요소:
-
-- 최근 식단 3개
-- 오늘 섭취 영양 요약
+- 최근 식단
+- 오늘 영양 요약
 - 일일 목표
-- AI 코치 요약
-- 활성 챌린지 3개
+- 코치 요약
 - 소셜 수치
+- 활성 챌린지 일부
 
-특징:
+### 식단
 
-- 홈 화면은 다른 서비스의 계산 결과를 "조합"하는 성격이 강하다.
-- 컨트롤러 자체 로직은 많지 않지만, 매 요청마다 여러 서비스 계산을 반복한다.
-
-### 8.3 식단
-
-지원 기능:
-
+- 목록, 상세, 등록, 수정, 삭제
 - 날짜/식사유형 필터
 - 정렬 기준 선택
-- 상세 분석
-- 등록/수정/삭제
+- 영양 분석
 - 음식 검색
 - 음식 추천
 
-정렬 키:
+### 프로필
 
-- `dateDesc`
-- `dateAsc`
-- `energyDesc`
-- `scoreDesc`
-
-권한:
-
-- 상세/수정/삭제 모두 meal owner인지 확인
-
-### 8.4 프로필
-
-지원 기능:
-
-- 개인 정보 수정
-- 목표/성별/신체 정보 변경
+- 사용자 정보 수정
+- 목표/신체 정보 수정
 - 계정 비활성화
-- 계정 영구 삭제
+- 계정 삭제
 
-계정 삭제 시 정리되는 데이터:
+### 소셜
 
-- 본인 식단
-- 팔로우 관계
-- 본인이 생성한 챌린지와 멤버십
-- 본인 게시글/댓글
-
-즉, 수동 cascade delete를 서비스 레벨에서 구현했다.
-
-### 8.5 소셜
-
-지원 기능:
-
-- 팔로우
-- 언팔로우
+- 팔로우/언팔로우
+- 팔로워/팔로잉 조회
 - 추천 사용자
-- 팔로워/팔로잉 목록
-- 리더보드
+- 팔로워 수 기반 리더보드
 
-관찰:
-
-- `follow()`는 자기 자신 팔로우와 중복 팔로우만 막는다.
-- 대상 사용자가 실제로 존재하는지, 활성 사용자인지 확인하지 않는다.
-
-### 8.6 챌린지
-
-지원 기능:
+### 챌린지
 
 - 생성
 - 참여
 - 탈퇴
-- 진행률 수정
-- 삭제
+- 진행률 갱신
+- 생성자 삭제
 
-관찰:
-
-- 생성 시 제목, targetCount, endDate만 강하게 검사
-- 참여 시 "이미 참여 중인지"와 "챌린지 존재 여부"만 검사
-- 종료된 챌린지 참여 방지 로직은 없음
-
-### 8.7 커뮤니티
-
-지원 기능:
+### 커뮤니티
 
 - 게시글 CRUD
 - 댓글 CRUD
 - 카테고리 필터
 - 식단 연결
 
-관찰:
+### 코치
 
-- 게시글/댓글 수정/삭제는 작성자만 가능
-- 하지만 `linkedMealId`가 실제로 본인 식단인지 검증하지 않는다.
-- 따라서 이론상 다른 사용자의 meal id나 존재하지 않는 meal id도 연결될 수 있다.
+- 최근 식단 분석 요약
+- 영양 상태에 따른 문구 생성
+- 목표별 운동 세션 제안
+- 챌린지 연계 next action
 
-### 8.8 AI 코치
+중요한 점: 이 기능은 외부 AI API가 아니라 규칙 기반 생성 로직이다.
 
-실제 구조:
+## 8. 데이터 저장 방식
 
-- 외부 AI API는 없다.
-- 식단 분석 + 목표(goal) + 챌린지 상태를 조합한 규칙 기반 추천이다.
+### 실제 사용 중인 저장 방식
 
-장점:
+현재 앱은 DB가 아니라 메모리 저장소를 사용한다.
 
-- 데모/학습용으로는 흐름이 명확하다.
-- 서비스 레이어에 규칙이 응집돼 있어 유지보수 포인트가 분명하다.
+- `UserRepository`
+- `MealRepository`
+- `FoodCatalogRepository`
+- `SocialRepository`
+- `ChallengeRepository`
+- `CommunityRepository`
 
-한계:
+모두 `Map`이나 `List` 중심이며, 서버 재시작 시 데이터가 초기화된다.
 
-- 개인화 깊이는 제한적
-- 실제 운동/영양 코치라고 부르기엔 규칙이 단순함
+### 초기 데이터
 
-## 9. 알고리즘 사용 위치
+`SeedDataFactory`가 다음 데이터를 만든다.
 
-README 설명과 실제 코드가 어느 정도 맞아떨어진다.
+- 사용자
+- 음식 카탈로그
+- 식단
+- 팔로우 관계
+- 챌린지
+- 챌린지 멤버십
+- 커뮤니티 게시글/댓글
 
-### Quick Sort
+즉, 현재 실제 동작 범위는 식단만이 아니라 소셜/챌린지/커뮤니티까지 포함한 메모리 시드 기반이다.
 
-- 구현 위치: `SortUtils.quickSort`
-- 사용 위치:
+## 9. DB 관련 자산의 현재 의미
+
+현재 코드베이스에는 DB 자산이 다시 존재한다.
+
+### 존재하는 것
+
+- `DBUtil`
+- MySQL JDBC 의존성
+- `src/main/resources/yumyum_schema.sql`
+
+### 하지만 실제로는 사용 안 함
+
+`DBUtil`은 검색 결과 기준으로 어떤 서비스/저장소/컨트롤러에서도 호출되지 않는다.  
+즉, 현재 앱은 실질적으로 DB 무관 상태다.
+
+### 내부 불일치
+
+- `DBUtil` 접속 DB 이름: `ssafy_yumyumcoach`
+- SQL 파일 생성 DB 이름: `yamyam_db`
+
+이 둘은 서로 맞지 않는다.
+
+### SQL 스키마 범위
+
+`yumyum_schema.sql`이 다루는 테이블은 다음뿐이다.
+
+- `users`
+- `foods`
+- `meals`
+- `meal_foods`
+
+즉, 현재 앱이 제공하는 전체 기능 중 다음은 SQL 스키마에 반영되지 않았다.
+
+- 소셜
+- 챌린지
+- 커뮤니티
+- 코치
+
+### SQL 파일 자체의 품질 문제
+
+시드 INSERT 구문에 깨진 문자열과 닫히지 않은 따옴표처럼 보이는 부분이 존재한다.  
+따라서 이 SQL은 현재 상태 그대로는 실제 DB에 바로 적용되지 않을 가능성이 높다.
+
+즉, DB 전환 자산은 "다시 생기긴 했지만 아직 신뢰 가능한 배포 자산은 아님"이 현재 평가다.
+
+## 10. JSP 상태
+
+### 좋아진 점
+
+- `com.yamyam` import 잔재가 현재 `src` 기준으로 제거됐다.
+- JSP import는 이제 `com.ssafy.yumyum.*`를 참조한다.
+
+### 여전히 남아 있는 점
+
+- JSTL 의존성은 있지만 실제 `taglib` 사용은 거의 없다.
+- 뷰는 여전히 scriptlet 기반이다.
+- 사용자 입력이 `<%= ... %>`로 직접 출력되는 구간이 많다.
+
+이 구조는 학습용으로는 단순하지만, 유지보수성과 보안 면에서는 약하다.
+
+## 11. 알고리즘 사용 위치
+
+현재도 알고리즘 설명은 유효하다.
+
+- `SortUtils.quickSort`
   - 식단 정렬
   - 팔로워/팔로잉 정렬
-  - 추천 사용자/리더보드 정렬
-  - 챌린지/게시글/댓글 정렬
+  - 게시글/댓글/챌린지 정렬
+- `SortUtils.selectionSort`
+  - 선택 음식 목록 정렬
+- `SortUtils.countingSort`
+  - 추천 음식 정렬
 
-### Selection Sort
+학습 목적에는 맞지만, 일부 비교 로직은 계산 비용이 반복된다.
 
-- 구현 위치: `SortUtils.selectionSort`
-- 사용 위치:
-  - `MealService.sortFoodsByEnergy`
-- 용도:
-  - 선택 음식 목록을 칼로리 기준으로 정렬
+예:
 
-### Counting Sort
+- `MealService.sortMeals(... scoreDesc ...)`는 comparator 내부에서 `analyzeMeal()`을 반복 호출
+- `SocialService`는 정렬 비교 중 팔로워 수를 반복 계산
 
-- 구현 위치: `SortUtils.countingSort`
-- 사용 위치:
-  - `MealService.recommendFoods`
-- 용도:
-  - 목표 칼로리와의 차이(`energyGap`) 기준 추천 정렬
+## 12. 검증 결과
 
-### 실무적 평가
+### 로컬 도구 상태
 
-- 학습 목적에는 적합하다.
-- 다만 현재 데이터 규모에서는 표준 정렬보다 가독성 이점이 크지 않다.
-- `scoreDesc` 정렬처럼 comparator 안에서 비싼 계산을 다시 수행하는 부분은 비효율적이다.
-
-## 10. 뷰 레이어 분석
-
-### 구조
-
-- 공통 조각:
-  - `header.jspf`
-  - `navbar.jspf`
-  - `flash.jspf`
-  - `footer.jspf`
-- 개별 화면:
-  - `auth/login.jsp`
-  - `auth/signup.jsp`
-  - `home/index.jsp`
-  - `meal/list.jsp`
-  - `meal/form.jsp`
-  - `meal/detail.jsp`
-  - `profile/index.jsp`
-  - `social/index.jsp`
-  - `challenge/index.jsp`
-  - `community/index.jsp`
-  - `coach/index.jsp`
-
-### 구현 스타일
-
-- JSTL을 추가했지만 실제로는 사용하지 않는다.
-- `taglib` 선언이 없다.
-- `c:out`, `fmt:*`, `fn:*`도 없다.
-- JSP scriptlet/표현식 사용 흔적은 총 389개였다.
-
-즉, 뷰는 EL/JSTL 기반이 아니라 전통적인 scriptlet JSP 스타일이다.
-
-### 스타일링
-
-- Bootstrap CDN 사용
-- `assets/css/style.css`에서 카드/그리드/히어로 섹션 중심의 커스텀 스타일 추가
-- 디자인 방향은 베이지/그린 계열의 건강/식단 서비스 느낌
-
-## 11. 영속화와 DB 전환 흔적
-
-이 프로젝트는 현재 "메모리 저장소"와 "DB 전환 흔적"이 함께 존재한다.
-
-### 실제 런타임
-
-- `AppContainer`가 `SeedDataFactory`로 저장소를 초기화
-- 모든 CRUD는 repository의 메모리 컬렉션에 반영
-- 재기동 시 데이터 소실
-
-### DB 관련 흔적
-
-- `pom.xml`에 MySQL 드라이버 의존성 존재
-- `DBUtil` 존재
-
-### 하지만 실제 사용은 안 됨
-
-- `DBUtil`은 어떤 서비스/저장소/컨트롤러에서도 호출되지 않는다.
-- 즉, 현재 앱은 DB 연결 코드가 있어도 실질적으로는 사용하지 않는다.
-
-### 현재 기준 해석
-
-- 현재 소스 트리에는 `src/main/resources`가 없다.
-- 즉, JDBC 의존성과 `DBUtil`은 남아 있지만, DB 스키마/매퍼/DAO까지 연결된 완성형 영속화 레이어는 보이지 않는다.
-- 실질적으로는 "DB를 향해 이동하다가, 아직 런타임은 메모리 저장소에 머물러 있는 상태"로 해석하는 편이 맞다.
-
-## 12. 정적 검증 결과
-
-### 확인한 것
-
-- `mvn` 명령은 현재 로컬 환경에 설치되어 있지 않았다.
-- 따라서 Maven 기반 전체 빌드/패키징은 이 조사 중 직접 실행하지 못했다.
-- 대신 `javac`를 사용해 순수 Java 계층 정적 컴파일을 시도했다.
-
-### javac 결과
-
-- 사용 가능 JDK: `javac 8`
-- `model + repository + service + util(일부 제외)` 컴파일:
-  - `DBUtil` 제외 시 성공
-  - `DBUtil` 포함 시 실패
-
-### DBUtil 실패 원인
-
-- `DBUtil`이 `lombok.NoArgsConstructor`를 사용
-- 직접 `javac` 실행 시 Lombok이 classpath에 없어서 실패
+- `mvn`: 없음
+- `mvnw.cmd`: 없음
+- `javac`: 있음
+- 로컬 javac 버전: `1.8.0_192`
 
 ### 해석
 
-- 적어도 도메인/서비스/저장소 계층의 순수 Java 코드는 Java 8 문법 수준에서도 대부분 컴파일된다.
-- 다만 웹 계층은 `jakarta.servlet` 의존성이 필요하므로 이 조사에서는 완전 컴파일 확인을 못 했다.
+프로젝트는 Java 21을 요구하지만, 현재 터미널에서 바로 사용할 수 있는 `javac`는 Java 8이다.  
+즉, Maven/Java 21 기준의 전체 빌드를 이 환경에서 직접 재현하기는 어렵다.
 
-## 13. 중요 리스크와 관찰 포인트
+### 수행한 정적 검증
 
-### 13.1 높은 우선순위
+다음 범위는 `javac`로 별도 컴파일 확인했다.
 
-1. JSP import 패키지 불일치
-- `WEB-INF/views`의 10개 파일이 `com.ssafy.yumyum.*`를 import한다.
-- 실제 Java 패키지는 `com.ssafy.yumyum.*`다.
-- 이 상태라면 JSP 컴파일 시 클래스 해석 실패 가능성이 매우 높다.
+- `model`
+- `repository`
+- `service`
+- `util` 일부
 
-2. 보안상 평문 비밀번호 저장
-- `User.password`가 평문
-- 로그인도 평문 비교
-- 시드 데이터도 평문 비밀번호 사용
+제외:
 
-3. XSS 방어 부재
-- 출력 대부분이 `<%= ... %>`로 직접 렌더링된다.
-- 게시글 제목/내용, 댓글, 닉네임, 건강 메모, 식단 메모 등 사용자 입력이 HTML escape 없이 출력된다.
+- `BaseController`
+- `SessionUtils`
+- `DBUtil`
 
-4. 문서/설정/코드의 버전 불일치
-- README, pom, 코드가 서로 다른 시대의 상태를 동시에 반영하고 있다.
-- 신규 참여자가 환경을 맞추기 어렵다.
+결과:
 
-### 13.2 중간 우선순위
+- 위 제외 범위는 현재도 정적 컴파일 성공
+- `DBUtil`은 Lombok 의존성 때문에 단독 javac 검증 대상에서 제외
+- 웹 계층은 Jakarta Servlet API classpath가 필요해 이 조사에서는 완전 검증하지 못함
 
-5. CSRF 방어 없음
-- 상태 변경은 POST를 쓰지만 CSRF 토큰 개념이 없다.
+## 13. 현재 시점의 핵심 문제
 
-6. 메모리 저장소와 DB 흔적의 이중 상태
-- 지금은 DB를 쓰지 않지만, 의존성과 유틸이 남아 있다.
-- 전환 기준이 불명확해 유지보수 비용이 커질 수 있다.
+### 1. Maven 웹 패키징 정합성 부족
 
-7. 비즈니스 검증 누락
-- `SocialService.follow()`는 대상 사용자 존재/활성 여부 미검증
-- `CommunityService.createPost()`는 `linkedMealId` 정합성 미검증
-- `ChallengeService.joinChallenge()`는 종료된 챌린지 참여 차단 없음
+- `pom.xml`에 `packaging=war`가 없다
+- war plugin 설정도 없다
 
-8. 반복 계산에 따른 비효율
-- `MealService.sortMeals(... scoreDesc ...)`는 comparator 안에서 `analyzeMeal()`을 반복 호출
-- `SocialService.getSuggestions()`와 `getLeaderboard()`는 정렬 비교 중 `countFollowers()`를 반복 호출
+Eclipse WTP와 Maven 관점이 분리돼 있다.
 
-9. 작업 트리 오염
-- 미추적 `bin/`이 남아 있음
-- `.gitignore`에 `bin/`이 없어 Eclipse 산출물이 계속 섞일 가능성 있음
+### 2. WTP 설정 불일치
 
-### 13.3 낮은 우선순위지만 참고할 점
+- `web.xml`은 6.0
+- facet은 5.0
+- test source가 배포 어셈블리에 포함
 
-10. JSTL 의존성은 있지만 실제 미사용
-- 현재는 전통적인 scriptlet JSP 스타일
-- 점진적으로 EL/JSTL로 옮기면 가독성이 좋아질 수 있다.
+즉, IDE 실행은 될 수 있어도 설정 일관성이 약하다.
 
-11. 코치 기능은 규칙 기반
-- 데모 목적에는 충분하지만, "AI 코치"라는 이름에 비해 구현은 휴리스틱 중심이다.
+### 3. README가 현재 코드와 맞지 않음
 
-## 14. 개선 우선순위 제안
+- Java 버전
+- Tomcat 버전
+- 패키지 경로
+- 예시 URL
 
-### 1차
+모두 최신 상태와 어긋난다.
 
-- JSP import를 전부 `com.ssafy.yumyum.*`로 수정
-- README를 현재 실행 기준에 맞게 갱신
-- `pom.xml` 기준 Java/Servlet/Tomcat 버전 정책 확정
+### 4. DB 자산이 반쯤만 복구됨
 
-### 2차
+- 스키마 파일은 다시 생김
+- 하지만 실제 런타임은 메모리 저장소
+- DBUtil DB명과 SQL DB명이 다름
+- SQL 시드 품질도 불안정
 
-- 비밀번호 해시 도입
-- 출력 escape 도입
-- CSRF 대응
+### 5. 보안 리스크 지속
 
-### 3차
+- 평문 비밀번호 저장/비교
+- XSS escape 부재
+- CSRF 방어 없음
 
-- DB 전환 방향 확정
-- `DBUtil`과 repository 구현을 하나의 기준으로 정리
-- 현재 도메인 전체를 반영하는 스키마 재설계
+### 6. 테스트 부재
 
-### 4차
+- `src/test`는 존재
+- 실제 테스트 파일은 없음
 
-- JSP scriptlet 축소
-- EL/JSTL 또는 템플릿 구조 개선
-- 정렬 전 점수/카운트 사전 계산으로 중복 연산 감소
+즉, 테스트 구조만 만들어지고 검증 코드가 아직 없다.
 
-## 15. 최종 평가
+## 14. 이전 조사 대비 달라진 점
 
-이 프로젝트는 학습용 MVC 애플리케이션으로서는 구조가 꽤 잘 보인다. 컨트롤러, 서비스, 저장소, 모델이 명확히 나뉘고, 식단/소셜/챌린지/커뮤니티/코치까지 기능 범위도 넓다. 특히 `MealService`, `CoachService`, `ChallengeService`는 "규칙이 서비스에 모여 있는 전형적인 계층형 설계"를 잘 보여준다.
+이번 재조사에서 달라진 핵심은 다음이다.
 
-반면 현재 상태 그대로는 실사용보다 "이행 중인 데모 프로젝트"에 더 가깝다. 가장 큰 이유는 다음 셋이다.
+- `src/main/resources/yumyum_schema.sql`이 다시 존재한다
+- `src/test/java`, `src/test/resources` 디렉터리가 생겼다
+- `.gitignore`에 `bin/` 등 Eclipse 산출물 무시 규칙이 들어갔다
+- JSP import의 `com.yamyam` 잔재는 현재 소스 기준으로 정리됐다
+- 반대로 `pom.xml`은 이전에 보였던 WAR/빌드 플러그인 명시가 사라지고 더 단순한 상태다
 
-- JSP import 오류 가능성
-- 영속화 전략의 미완성
-- 보안/문서화의 미정리
+즉, 코드 로직이 크게 바뀌었다기보다 "설정과 보조 자산이 다시 흔들리는 중"에 가깝다.
 
-따라서 이 저장소의 현재 상태를 한 문장으로 요약하면 다음과 같다.
+## 15. 권장 정리 순서
 
-> 구조는 잘 잡힌 학습형 JSP/Servlet MVC 앱이지만, 실행 환경 정합성과 뷰 패키지 정리, 영속화 방향 통합이 선행되어야 안정적으로 운영 가능한 상태다.
+1. `pom.xml`에 `packaging>war</packaging>`와 WAR 빌드 기준을 확정한다.
+2. Eclipse facet을 `web.xml`과 맞는 버전으로 정리한다.
+3. Deployment Assembly에서 `src/test/*`를 웹 배포 대상에서 제거한다.
+4. README를 현재 실행 기준으로 전면 갱신한다.
+5. DB를 쓸지, 메모리 저장소를 유지할지 방향을 먼저 결정한다.
+6. DB를 쓴다면 `DBUtil`, schema, repository를 한 기준으로 재설계한다.
+7. 비밀번호 해시, 출력 escape, CSRF 대응을 넣는다.
+8. 최소한 서비스 계층 테스트부터 추가한다.
+
+## 최종 판단
+
+현재 프로젝트는 여전히 "학습용 MVC 앱으로서의 구조"는 분명하고, 코드 읽기 난이도도 과하게 높지 않다.  
+하지만 최근 변경은 기능 추가보다 설정 재편과 자산 복구에 더 가까워서, 지금 가장 중요한 일은 새 기능보다 **실행 기준 정합성 확정**이다.
+
+한 문장으로 요약하면 다음과 같다.
+
+> 지금 코드베이스는 기능 구조보다 설정 계층이 더 많이 흔들리고 있으며, 우선 Maven/WTP/DB 자산의 기준을 하나로 맞추는 정리가 필요하다.
