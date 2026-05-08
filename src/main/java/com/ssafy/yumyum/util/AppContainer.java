@@ -16,7 +16,8 @@ import com.ssafy.yumyum.service.UserService;
 
 public final class AppContainer {
 
-    private static final UserRepository USER_REPOSITORY = new UserRepository(SeedDataFactory.users());
+    private static final UserRepository USER_REPOSITORY = new UserRepository();
+
     private static final MealRepository MEAL_REPOSITORY = new MealRepository(SeedDataFactory.meals());
     private static final FoodCatalogRepository FOOD_CATALOG_REPOSITORY = new FoodCatalogRepository(SeedDataFactory.catalogFoods());
     private static final SocialRepository SOCIAL_REPOSITORY = new SocialRepository(SeedDataFactory.follows());

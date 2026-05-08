@@ -25,8 +25,11 @@ public class UserService {
     private final ChallengeRepository challengeRepository;
     private final CommunityRepository communityRepository;
 
-    public UserService(UserRepository userRepository, MealRepository mealRepository, SocialRepository socialRepository,
-                       ChallengeRepository challengeRepository, CommunityRepository communityRepository) {
+    public UserService(UserRepository userRepository,
+                       MealRepository mealRepository,
+                       SocialRepository socialRepository,
+                       ChallengeRepository challengeRepository,
+                       CommunityRepository communityRepository) {
         this.userRepository = userRepository;
         this.mealRepository = mealRepository;
         this.socialRepository = socialRepository;
@@ -40,11 +43,13 @@ public class UserService {
 
     public List<User> findAllActiveUsers() {
         List<User> users = new ArrayList<>();
+
         for (User user : userRepository.findAll()) {
             if (user.isActive()) {
                 users.add(user);
             }
         }
+
         return users;
     }
 
@@ -53,29 +58,37 @@ public class UserService {
         if (email == null || !email.contains("@")) {
             return ServiceResult.failure("올바른 이메일을 입력해 주세요.");
         }
-        User duplicated = userRepository.findByEmail(email.trim());
+
+        String trimmedEmail = email.trim();
+
+        User duplicated = userRepository.findByEmail(trimmedEmail);
         if (duplicated != null && !duplicated.getId().equals(user.getId())) {
             return ServiceResult.failure("이미 사용 중인 이메일입니다.");
         }
+
         if (nickname == null || nickname.trim().isEmpty()) {
             return ServiceResult.failure("닉네임을 입력해 주세요.");
         }
 
-        user.setEmail(email.trim());
+        user.setEmail(trimmedEmail);
         user.setNickname(nickname.trim());
+
         if (password != null && !password.trim().isEmpty()) {
             if (password.length() < 8) {
                 return ServiceResult.failure("비밀번호는 8자 이상이어야 합니다.");
             }
             user.setPassword(password);
         }
+
         user.setGender(gender);
         user.setBirthYear(birthYear);
         user.setHeight(height);
         user.setWeight(weight);
         user.setGoal(goal);
         user.setHealthNote(healthNote == null ? "" : healthNote.trim());
+
         userRepository.save(user);
+
         return ServiceResult.success("프로필을 수정했습니다.", user);
     }
 
@@ -89,6 +102,7 @@ public class UserService {
         deleteFollowRelations(user.getId());
         deleteChallenges(user.getId());
         deleteCommunityData(user.getId());
+
         userRepository.delete(user.getId());
     }
 
@@ -114,6 +128,7 @@ public class UserService {
                 challengeRepository.deleteChallenge(challenge.getId());
             }
         }
+
         for (ChallengeMembership membership : challengeRepository.findAllMemberships()) {
             if (userId.equals(membership.getUserId())) {
                 challengeRepository.deleteMembership(membership.getId());
@@ -127,6 +142,7 @@ public class UserService {
                 communityRepository.deletePost(post.getId());
             }
         }
+
         for (CommunityComment comment : communityRepository.findAllComments()) {
             if (userId.equals(comment.getUserId())) {
                 communityRepository.deleteComment(comment.getId());
