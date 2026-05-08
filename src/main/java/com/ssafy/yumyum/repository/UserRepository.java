@@ -40,6 +40,10 @@ public class UserRepository {
         seedIfEmpty(seedUsers == null ? List.of() : seedUsers);
     }
 
+    public UserRepository() {
+        initializeSchema();
+    }
+
     public synchronized List<User> findAll() {
         String sql = """
             SELECT user_id, email, password, nickname, gender, birth_year, height, weight,
