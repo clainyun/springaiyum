@@ -3,6 +3,8 @@
 -- Run this after SSAFY_COACH_Schema.sql
 -- =====================================================
 
+SET NAMES utf8mb4;
+
 USE ssafy_yumyumcoach;
 
 START TRANSACTION;

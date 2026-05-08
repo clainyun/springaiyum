@@ -3,6 +3,8 @@
 -- 강의 제공 스펙 기준 + 회원 필수 기능 추가
 -- =====================================================
 
+SET NAMES utf8mb4;
+
 -- [0] 스키마 생성
 DROP DATABASE IF EXISTS ssafy_yumyumcoach;
 CREATE DATABASE IF NOT EXISTS ssafy_yumyumcoach
