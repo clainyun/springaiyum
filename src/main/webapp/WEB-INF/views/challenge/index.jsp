@@ -48,7 +48,6 @@
           </div>
 
           <form method="post" action="${challengesUrl}">
-            <input type="hidden" name="action" value="create">
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label fw-semibold">제목</label>
@@ -65,10 +64,10 @@
               <div class="col-md-4">
                 <label class="form-label fw-semibold">분류</label>
                 <select class="form-select" name="category">
-                  <option value="습관" <c:if test="${challengeForm.category eq '습관'}">selected</c:if>>습관</option>
-                  <option value="영양 관리" <c:if test="${challengeForm.category eq '영양 관리'}">selected</c:if>>영양 관리</option>
-                  <option value="운동" <c:if test="${challengeForm.category eq '운동'}">selected</c:if>>운동</option>
-                  <option value="수면 습관" <c:if test="${challengeForm.category eq '수면 습관'}">selected</c:if>>수면 습관</option>
+                  <option value="습관" ${challengeForm.category eq '습관' ? 'selected="selected"' : ''}>습관</option>
+                  <option value="영양 관리" ${challengeForm.category eq '영양 관리' ? 'selected="selected"' : ''}>영양 관리</option>
+                  <option value="운동" ${challengeForm.category eq '운동' ? 'selected="selected"' : ''}>운동</option>
+                  <option value="수면 습관" ${challengeForm.category eq '수면 습관' ? 'selected="selected"' : ''}>수면 습관</option>
                 </select>
               </div>
               <div class="col-md-8">
@@ -101,6 +100,10 @@
               <c:forEach var="challenge" items="${challenges}">
                 <c:set var="membership" value="${membershipMap[challenge.id]}" />
                 <c:set var="participants" value="${participantMap[challenge.id]}" />
+                <c:url var="joinUrl" value="/challenges/${challenge.id}/memberships" />
+                <c:url var="myMembershipUrl" value="/challenges/${challenge.id}/memberships/me" />
+                <c:url var="deleteUrl" value="/challenges/${challenge.id}" />
+
                 <div class="challenge-card mb-3">
                   <div class="d-flex justify-content-between align-items-start">
                     <div>
@@ -138,31 +141,26 @@
                   <div class="d-flex flex-wrap gap-2 mt-4">
                     <c:choose>
                       <c:when test="${empty membership}">
-                        <form method="post" action="${challengesUrl}">
-                          <input type="hidden" name="action" value="join">
-                          <input type="hidden" name="challengeId" value="${challenge.id}">
+                        <form method="post" action="${joinUrl}">
                           <button class="btn btn-outline-success btn-sm" type="submit">참여하기</button>
                         </form>
                       </c:when>
                       <c:otherwise>
-                        <form class="d-flex gap-2" method="post" action="${challengesUrl}">
-                          <input type="hidden" name="action" value="progress">
-                          <input type="hidden" name="challengeId" value="${challenge.id}">
+                        <form class="d-flex gap-2" method="post" action="${myMembershipUrl}">
+                          <input type="hidden" name="_method" value="patch">
                           <input class="form-control form-control-sm" style="width:100px;" type="number" name="progress" value="${membership.progress}">
                           <button class="btn btn-outline-primary btn-sm" type="submit">진행률 수정</button>
                         </form>
-                        <form method="post" action="${challengesUrl}">
-                          <input type="hidden" name="action" value="leave">
-                          <input type="hidden" name="challengeId" value="${challenge.id}">
+                        <form method="post" action="${myMembershipUrl}">
+                          <input type="hidden" name="_method" value="delete">
                           <button class="btn btn-outline-danger btn-sm" type="submit">나가기</button>
                         </form>
                       </c:otherwise>
                     </c:choose>
 
                     <c:if test="${ownedChallengeMap[challenge.id]}">
-                      <form method="post" action="${challengesUrl}">
-                        <input type="hidden" name="action" value="delete">
-                        <input type="hidden" name="challengeId" value="${challenge.id}">
+                      <form method="post" action="${deleteUrl}">
+                        <input type="hidden" name="_method" value="delete">
                         <button class="btn btn-outline-danger btn-sm" type="submit">삭제</button>
                       </form>
                     </c:if>

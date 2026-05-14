@@ -17,8 +17,11 @@ import java.util.Map;
 import lombok.Data;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -90,7 +93,7 @@ public class ChallengeController {
         return CHALLENGE_INDEX_VIEW;
     }
 
-    @PostMapping(params = "action=create")
+    @PostMapping
     public String createChallenge(
         @ModelAttribute("currentUser") User user,
         @ModelAttribute("challengeForm") ChallengeForm form,
@@ -112,10 +115,10 @@ public class ChallengeController {
         return CHALLENGES_REDIRECT;
     }
 
-    @PostMapping(params = "action=join")
+    @PostMapping("/{challengeId}/memberships")
     public String joinChallenge(
         @ModelAttribute("currentUser") User user,
-        @RequestParam String challengeId,
+        @PathVariable String challengeId,
         HttpServletRequest req
     ) {
         if (user == null) {
@@ -127,25 +130,10 @@ public class ChallengeController {
         return CHALLENGES_REDIRECT;
     }
 
-    @PostMapping(params = "action=leave")
-    public String leaveChallenge(
-        @ModelAttribute("currentUser") User user,
-        @RequestParam String challengeId,
-        HttpServletRequest req
-    ) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
-
-        AppContainer.getChallengeService().leaveChallenge(challengeId, user.getId());
-        SessionUtils.flash(req.getSession(), "info", "챌린지에서 나갔습니다.");
-        return CHALLENGES_REDIRECT;
-    }
-
-    @PostMapping(params = "action=progress")
+    @PatchMapping("/{challengeId}/memberships/me")
     public String updateProgress(
         @ModelAttribute("currentUser") User user,
-        @RequestParam String challengeId,
+        @PathVariable String challengeId,
         @RequestParam(required = false) String progress,
         HttpServletRequest req
     ) {
@@ -162,10 +150,25 @@ public class ChallengeController {
         return CHALLENGES_REDIRECT;
     }
 
-    @PostMapping(params = "action=delete")
+    @DeleteMapping("/{challengeId}/memberships/me")
+    public String leaveChallenge(
+        @ModelAttribute("currentUser") User user,
+        @PathVariable String challengeId,
+        HttpServletRequest req
+    ) {
+        if (user == null) {
+            return LOGIN_REDIRECT;
+        }
+
+        AppContainer.getChallengeService().leaveChallenge(challengeId, user.getId());
+        SessionUtils.flash(req.getSession(), "info", "챌린지에서 나갔습니다.");
+        return CHALLENGES_REDIRECT;
+    }
+
+    @DeleteMapping("/{challengeId}")
     public String deleteChallenge(
         @ModelAttribute("currentUser") User user,
-        @RequestParam String challengeId,
+        @PathVariable String challengeId,
         HttpServletRequest req
     ) {
         if (user == null) {
@@ -175,11 +178,6 @@ public class ChallengeController {
         AppContainer.getChallengeService().deleteChallenge(challengeId, user);
         SessionUtils.flash(req.getSession(), "success", "챌린지를 삭제했습니다.");
         return CHALLENGES_REDIRECT;
-    }
-
-    @PostMapping
-    public String fallback(@ModelAttribute("currentUser") User user) {
-        return user == null ? LOGIN_REDIRECT : CHALLENGES_REDIRECT;
     }
 
     private Map<String, String> periodLabelMap(List<Challenge> challenges) {
