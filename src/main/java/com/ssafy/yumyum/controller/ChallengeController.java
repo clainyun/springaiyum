@@ -1,76 +1,216 @@
 package com.ssafy.yumyum.controller;
 
 import com.ssafy.yumyum.model.Challenge;
+import com.ssafy.yumyum.model.ChallengeMembership;
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.util.AppContainer;
-import com.ssafy.yumyum.util.BaseController;
 import com.ssafy.yumyum.util.ServiceResult;
 import com.ssafy.yumyum.util.SessionUtils;
+import com.ssafy.yumyum.util.ViewHelper;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-@WebServlet("/challenges")
-public class ChallengeController extends BaseController {
+import lombok.Data;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.SessionAttribute;
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        User user = requireLoginUser(req, resp);
-        if (user == null) {
-            return;
-        }
-        List<Challenge> challenges = AppContainer.getChallengeService().getChallenges();
-        req.setAttribute("pageTitle", "챌린지");
-        req.setAttribute("activeNav", "challenge");
-        req.setAttribute("challenges", challenges);
-        req.setAttribute("membershipMap", AppContainer.getChallengeService().membershipMap(user.getId()));
-        req.setAttribute("participantMap", AppContainer.getChallengeService().participantMap(challenges));
-        req.setAttribute("joinedCount", AppContainer.getChallengeService().countJoined(user.getId()));
-        req.setAttribute("completedCount", AppContainer.getChallengeService().countCompleted(user.getId()));
-        req.setAttribute("createdCount", createdCount(challenges, user.getId()));
-        render(req, resp, "challenge/index");
+@Controller
+@RequestMapping("/challenges")
+public class ChallengeController {
+
+    private static final String LOGIN_REDIRECT = "redirect:/auth/login";
+    private static final String CHALLENGE_INDEX_VIEW = "challenge/index";
+    private static final String CHALLENGES_REDIRECT = "redirect:/challenges";
+
+    @ModelAttribute
+    public void exposeFlash(HttpServletRequest req) {
+        SessionUtils.exposeFlash(req);
     }
 
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        User user = requireLoginUser(req, resp);
+    @ModelAttribute("pageTitle")
+    public String pageTitle() {
+        return "챌린지";
+    }
+
+    @ModelAttribute("activeNav")
+    public String activeNav() {
+        return "challenge";
+    }
+
+    @ModelAttribute("challengeForm")
+    public ChallengeForm challengeForm() {
+        ChallengeForm form = new ChallengeForm();
+        form.setCategory("습관");
+        form.setTargetCount("7");
+        return form;
+    }
+
+    @ModelAttribute("currentUser")
+    public User currentUser(
+        @SessionAttribute(value = "loginUserId", required = false) String loginUserId,
+        HttpServletRequest req
+    ) {
+        User user = AppContainer.getUserService().findById(loginUserId);
+        if (user == null || !user.isActive()) {
+            SessionUtils.flash(req.getSession(), "warning", "로그인이 필요한 메뉴입니다.");
+            return null;
+        }
+        return user;
+    }
+
+    @GetMapping
+    public String getChallenges(@ModelAttribute("currentUser") User user, Model model) {
         if (user == null) {
-            return;
+            return LOGIN_REDIRECT;
         }
-        String action = req.getParameter("action");
-        if ("create".equals(action)) {
-            ServiceResult<?> result = AppContainer.getChallengeService().createChallenge(
-                user,
-                req.getParameter("title"),
-                req.getParameter("description"),
-                req.getParameter("category"),
-                parseInt(req.getParameter("targetCount"), 7),
-                parseDate(req.getParameter("endDate"))
-            );
-            SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
-        } else if ("join".equals(action)) {
-            ServiceResult<?> result = AppContainer.getChallengeService().joinChallenge(req.getParameter("challengeId"), user.getId());
-            SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
-        } else if ("leave".equals(action)) {
-            AppContainer.getChallengeService().leaveChallenge(req.getParameter("challengeId"), user.getId());
-            SessionUtils.flash(req.getSession(), "info", "챌린지에서 나갔습니다.");
-        } else if ("progress".equals(action)) {
-            ServiceResult<?> result = AppContainer.getChallengeService().updateProgress(
-                req.getParameter("challengeId"),
-                user.getId(),
-                parseInt(req.getParameter("progress"), 0)
-            );
-            SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
-        } else if ("delete".equals(action)) {
-            AppContainer.getChallengeService().deleteChallenge(req.getParameter("challengeId"), user);
-            SessionUtils.flash(req.getSession(), "success", "챌린지를 삭제했습니다.");
+
+        List<Challenge> challenges = AppContainer.getChallengeService().getChallenges();
+        Map<String, ChallengeMembership> membershipMap = AppContainer.getChallengeService().membershipMap(user.getId());
+
+        model.addAttribute("challenges", challenges);
+        model.addAttribute("membershipMap", membershipMap);
+        model.addAttribute("participantMap", AppContainer.getChallengeService().participantMap(challenges));
+        model.addAttribute("joinedCount", AppContainer.getChallengeService().countJoined(user.getId()));
+        model.addAttribute("completedCount", AppContainer.getChallengeService().countCompleted(user.getId()));
+        model.addAttribute("createdCount", createdCount(challenges, user.getId()));
+        model.addAttribute("challengeCount", challenges.size());
+        model.addAttribute("periodLabelMap", periodLabelMap(challenges));
+        model.addAttribute("statusLabelMap", statusLabelMap(challenges, membershipMap));
+        model.addAttribute("ownedChallengeMap", ownedChallengeMap(challenges, user.getId()));
+        return CHALLENGE_INDEX_VIEW;
+    }
+
+    @PostMapping(params = "action=create")
+    public String createChallenge(
+        @ModelAttribute("currentUser") User user,
+        @ModelAttribute("challengeForm") ChallengeForm form,
+        HttpServletRequest req
+    ) {
+        if (user == null) {
+            return LOGIN_REDIRECT;
         }
-        redirect(req, resp, "/challenges");
+
+        ServiceResult<?> result = AppContainer.getChallengeService().createChallenge(
+            user,
+            form.getTitle(),
+            form.getDescription(),
+            form.getCategory(),
+            parseInt(form.getTargetCount(), 7),
+            parseDate(form.getEndDate())
+        );
+        SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
+        return CHALLENGES_REDIRECT;
+    }
+
+    @PostMapping(params = "action=join")
+    public String joinChallenge(
+        @ModelAttribute("currentUser") User user,
+        @RequestParam String challengeId,
+        HttpServletRequest req
+    ) {
+        if (user == null) {
+            return LOGIN_REDIRECT;
+        }
+
+        ServiceResult<?> result = AppContainer.getChallengeService().joinChallenge(challengeId, user.getId());
+        SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
+        return CHALLENGES_REDIRECT;
+    }
+
+    @PostMapping(params = "action=leave")
+    public String leaveChallenge(
+        @ModelAttribute("currentUser") User user,
+        @RequestParam String challengeId,
+        HttpServletRequest req
+    ) {
+        if (user == null) {
+            return LOGIN_REDIRECT;
+        }
+
+        AppContainer.getChallengeService().leaveChallenge(challengeId, user.getId());
+        SessionUtils.flash(req.getSession(), "info", "챌린지에서 나갔습니다.");
+        return CHALLENGES_REDIRECT;
+    }
+
+    @PostMapping(params = "action=progress")
+    public String updateProgress(
+        @ModelAttribute("currentUser") User user,
+        @RequestParam String challengeId,
+        @RequestParam(required = false) String progress,
+        HttpServletRequest req
+    ) {
+        if (user == null) {
+            return LOGIN_REDIRECT;
+        }
+
+        ServiceResult<?> result = AppContainer.getChallengeService().updateProgress(
+            challengeId,
+            user.getId(),
+            parseInt(progress, 0)
+        );
+        SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
+        return CHALLENGES_REDIRECT;
+    }
+
+    @PostMapping(params = "action=delete")
+    public String deleteChallenge(
+        @ModelAttribute("currentUser") User user,
+        @RequestParam String challengeId,
+        HttpServletRequest req
+    ) {
+        if (user == null) {
+            return LOGIN_REDIRECT;
+        }
+
+        AppContainer.getChallengeService().deleteChallenge(challengeId, user);
+        SessionUtils.flash(req.getSession(), "success", "챌린지를 삭제했습니다.");
+        return CHALLENGES_REDIRECT;
+    }
+
+    @PostMapping
+    public String fallback(@ModelAttribute("currentUser") User user) {
+        return user == null ? LOGIN_REDIRECT : CHALLENGES_REDIRECT;
+    }
+
+    private Map<String, String> periodLabelMap(List<Challenge> challenges) {
+        Map<String, String> result = new HashMap<>();
+        for (Challenge challenge : challenges) {
+            result.put(
+                challenge.getId(),
+                ViewHelper.formatDate(challenge.getStartDate()) + " ~ " + ViewHelper.formatDate(challenge.getEndDate())
+            );
+        }
+        return result;
+    }
+
+    private Map<String, String> statusLabelMap(List<Challenge> challenges, Map<String, ChallengeMembership> membershipMap) {
+        Map<String, String> result = new HashMap<>();
+        for (Challenge challenge : challenges) {
+            ChallengeMembership membership = membershipMap.get(challenge.getId());
+            result.put(
+                challenge.getId(),
+                membership == null ? "모집 중" : ViewHelper.challengeStatusLabel(membership.getStatus())
+            );
+        }
+        return result;
+    }
+
+    private Map<String, Boolean> ownedChallengeMap(List<Challenge> challenges, String userId) {
+        Map<String, Boolean> result = new HashMap<>();
+        for (Challenge challenge : challenges) {
+            result.put(challenge.getId(), userId.equals(challenge.getCreatedBy()));
+        }
+        return result;
     }
 
     private int createdCount(List<Challenge> challenges, String userId) {
@@ -97,5 +237,14 @@ public class ChallengeController extends BaseController {
         } catch (Exception ignored) {
             return null;
         }
+    }
+
+    @Data
+    public static class ChallengeForm {
+        private String title;
+        private String description;
+        private String category;
+        private String targetCount;
+        private String endDate;
     }
 }
