@@ -8,27 +8,61 @@ import com.ssafy.yumyum.model.Meal;
 import com.ssafy.yumyum.model.NutritionSummary;
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.util.AppContainer;
-import com.ssafy.yumyum.util.BaseController;
+import com.ssafy.yumyum.util.SessionUtils;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet("/coach")
-public class CoachController extends BaseController {
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.SessionAttribute;
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        User user = requireLoginUser(req, resp);
+@Controller
+@RequestMapping("/coach")
+public class CoachController {
+
+    private static final String LOGIN_REDIRECT = "redirect:/auth/login";
+    private static final String COACH_INDEX_VIEW = "coach/index";
+
+    @ModelAttribute
+    public void exposeFlash(HttpServletRequest req) {
+        SessionUtils.exposeFlash(req);
+    }
+
+    @ModelAttribute("pageTitle")
+    public String pageTitle() {
+        return "AI 코치";
+    }
+
+    @ModelAttribute("activeNav")
+    public String activeNav() {
+        return "coach";
+    }
+
+    @ModelAttribute("currentUser")
+    public User currentUser(
+        @SessionAttribute(value = "loginUserId", required = false) String loginUserId,
+        HttpServletRequest req
+    ) {
+        User user = AppContainer.getUserService().findById(loginUserId);
+        if (user == null || !user.isActive()) {
+            SessionUtils.flash(req.getSession(), "warning", "로그인이 필요한 메뉴입니다.");
+            return null;
+        }
+        return user;
+    }
+
+    @GetMapping
+    public String getCoach(@ModelAttribute("currentUser") User user, Model model) {
         if (user == null) {
-            return;
+            return LOGIN_REDIRECT;
         }
 
         List<Meal> meals = AppContainer.getMealService().getMealsForUser(user.getId(), null, null, null, "dateDesc", user);
@@ -43,21 +77,20 @@ public class CoachController extends BaseController {
         }
 
         NutritionSummary todaySummary = AppContainer.getMealService().summarize(todayFoods);
+        List<ChallengeMembership> memberships = AppContainer.getChallengeService().membershipsForUser(user.getId());
         Map<String, Challenge> challengeMap = new HashMap<>();
-        for (ChallengeMembership membership : AppContainer.getChallengeService().membershipsForUser(user.getId())) {
+        for (ChallengeMembership membership : memberships) {
             Challenge challenge = AppContainer.getChallengeService().findChallenge(membership.getChallengeId());
             if (challenge != null) {
                 challengeMap.put(challenge.getId(), challenge);
             }
         }
 
-        req.setAttribute("pageTitle", "AI 코치");
-        req.setAttribute("activeNav", "coach");
-        req.setAttribute("coachAdvice", advice);
-        req.setAttribute("todaySummary", todaySummary);
-        req.setAttribute("dailyGoal", goal);
-        req.setAttribute("memberships", AppContainer.getChallengeService().membershipsForUser(user.getId()));
-        req.setAttribute("challengeMap", challengeMap);
-        render(req, resp, "coach/index");
+        model.addAttribute("coachAdvice", advice);
+        model.addAttribute("todaySummary", todaySummary);
+        model.addAttribute("dailyGoal", goal);
+        model.addAttribute("memberships", memberships);
+        model.addAttribute("challengeMap", challengeMap);
+        return COACH_INDEX_VIEW;
     }
 }
