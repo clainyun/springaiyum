@@ -1,5 +1,6 @@
 package com.ssafy.yumyum.repository;
 
+import org.springframework.stereotype.Repository;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -14,6 +15,7 @@ import java.util.Objects;
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.util.DBUtil;
 
+@Repository
 public class UserRepository {
 
     private static final String CREATE_USERS_SQL = """

@@ -1,9 +1,12 @@
 package com.ssafy.yumyum.service;
 
+import org.springframework.stereotype.Service;
+
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.repository.UserRepository;
 import com.ssafy.yumyum.util.ServiceResult;
 
+@Service
 public class AuthService {
 
     private final UserRepository userRepository;
