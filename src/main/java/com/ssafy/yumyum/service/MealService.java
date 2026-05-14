@@ -1,5 +1,7 @@
 package com.ssafy.yumyum.service;
 
+import org.springframework.stereotype.Service;
+
 import com.ssafy.yumyum.model.DailyGoal;
 import com.ssafy.yumyum.model.FoodItem;
 import com.ssafy.yumyum.model.FoodRecommendation;
@@ -20,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+@Service
 public class MealService {
 
     private final MealRepository mealRepository;

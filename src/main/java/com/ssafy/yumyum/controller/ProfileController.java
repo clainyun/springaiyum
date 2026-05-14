@@ -3,6 +3,8 @@ package com.ssafy.yumyum.controller;
 import com.ssafy.yumyum.exception.CustomException;
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.repository.UserRepository;
+import com.ssafy.yumyum.service.MealService;
+import com.ssafy.yumyum.util.AppContainer;
 import com.ssafy.yumyum.util.SessionUtils;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,9 +19,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 public class ProfileController {
 
     private final UserRepository userRepository;
+    private final MealService mealService;
 
-    public ProfileController(UserRepository userRepository) {
+    public ProfileController(UserRepository userRepository, MealService mealService) {
         this.userRepository = userRepository;
+        this.mealService = mealService;
     }
 
     @GetMapping("/profile")
@@ -29,6 +33,11 @@ public class ProfileController {
         model.addAttribute("pageTitle", "프로필");
         model.addAttribute("activeNav", "profile");
         model.addAttribute("currentUser", user);
+        model.addAttribute("dailyGoal", mealService.calculateDailyGoal(user));
+        model.addAttribute("mealCount", mealService.getMealsForUser(user.getId()).size());
+        model.addAttribute("followingCount", AppContainer.getSocialService().countFollowing(user.getId()));
+        model.addAttribute("followerCount", AppContainer.getSocialService().countFollowers(user.getId()));
+        model.addAttribute("joinedChallengeCount", AppContainer.getChallengeService().countJoined(user.getId()));
 
         return "profile/index";
     }
@@ -56,30 +65,19 @@ public class ProfileController {
         String password = request.getParameter("password");
 
         if (email == null || !email.contains("@")) {
-            model.addAttribute("pageTitle", "프로필");
-            model.addAttribute("activeNav", "profile");
-            model.addAttribute("currentUser", user);
-            model.addAttribute("errorMessage", "올바른 이메일을 입력해 주세요.");
-            return "profile/index";
+            return profileWithError(request, model, user, "올바른 이메일을 입력해 주세요.");
         }
 
         if (nickname == null || nickname.trim().isEmpty()) {
-            model.addAttribute("pageTitle", "프로필");
-            model.addAttribute("activeNav", "profile");
-            model.addAttribute("currentUser", user);
-            model.addAttribute("errorMessage", "닉네임을 입력해 주세요.");
-            return "profile/index";
+            return profileWithError(request, model, user, "닉네임을 입력해 주세요.");
         }
 
         String trimmedEmail = email.trim();
 
         User duplicated = userRepository.findByEmail(trimmedEmail);
+
         if (duplicated != null && !duplicated.getId().equals(user.getId())) {
-            model.addAttribute("pageTitle", "프로필");
-            model.addAttribute("activeNav", "profile");
-            model.addAttribute("currentUser", user);
-            model.addAttribute("errorMessage", "이미 사용 중인 이메일입니다.");
-            return "profile/index";
+            return profileWithError(request, model, user, "이미 사용 중인 이메일입니다.");
         }
 
         user.setEmail(trimmedEmail);
@@ -87,12 +85,9 @@ public class ProfileController {
 
         if (password != null && !password.trim().isEmpty()) {
             if (password.length() < 8) {
-                model.addAttribute("pageTitle", "프로필");
-                model.addAttribute("activeNav", "profile");
-                model.addAttribute("currentUser", user);
-                model.addAttribute("errorMessage", "비밀번호는 8자 이상이어야 합니다.");
-                return "profile/index";
+                return profileWithError(request, model, user, "비밀번호는 8자 이상이어야 합니다.");
             }
+
             user.setPassword(password);
         }
 
@@ -108,6 +103,20 @@ public class ProfileController {
         SessionUtils.flash(request.getSession(), "success", "프로필을 수정했습니다.");
 
         return "redirect:/profile";
+    }
+
+    private String profileWithError(HttpServletRequest request, Model model, User user, String errorMessage) {
+        model.addAttribute("pageTitle", "프로필");
+        model.addAttribute("activeNav", "profile");
+        model.addAttribute("currentUser", user);
+        model.addAttribute("dailyGoal", mealService.calculateDailyGoal(user));
+        model.addAttribute("mealCount", mealService.getMealsForUser(user.getId()).size());
+        model.addAttribute("followingCount", AppContainer.getSocialService().countFollowing(user.getId()));
+        model.addAttribute("followerCount", AppContainer.getSocialService().countFollowers(user.getId()));
+        model.addAttribute("joinedChallengeCount", AppContainer.getChallengeService().countJoined(user.getId()));
+        model.addAttribute("errorMessage", errorMessage);
+
+        return "profile/index";
     }
 
     private User getLoginUser(HttpServletRequest request) {

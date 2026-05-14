@@ -1,5 +1,11 @@
 package com.ssafy.yumyum.repository;
 
+import com.ssafy.yumyum.model.FoodItem;
+import com.ssafy.yumyum.model.Meal;
+import com.ssafy.yumyum.util.DBUtil;
+
+import org.springframework.stereotype.Repository;
+
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -7,7 +13,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -15,10 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.ssafy.yumyum.model.FoodItem;
-import com.ssafy.yumyum.model.Meal;
-import com.ssafy.yumyum.util.DBUtil;
-
+@Repository
 public class MealRepository {
 
     private static final String CREATE_MEALS_SQL = """
@@ -52,6 +54,10 @@ public class MealRepository {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """;
 
+    public MealRepository() {
+        initializeSchema();
+    }
+
     public MealRepository(List<Meal> seedMeals) {
         initializeSchema();
         seedIfEmpty(seedMeals == null ? List.of() : seedMeals);
@@ -65,6 +71,7 @@ public class MealRepository {
               LEFT JOIN meal_foods f ON m.meal_id = f.meal_id
              ORDER BY m.created_at ASC, m.meal_id ASC, f.item_order ASC
             """;
+
         return loadMeals(sql, null);
     }
 
@@ -77,6 +84,7 @@ public class MealRepository {
              WHERE m.meal_id = ?
              ORDER BY f.item_order ASC
             """;
+
         List<Meal> meals = loadMeals(sql, id);
         return meals.isEmpty() ? null : meals.get(0);
     }
@@ -86,6 +94,7 @@ public class MealRepository {
 
         try (Connection connection = DBUtil.getConnection()) {
             connection.setAutoCommit(false);
+
             try {
                 persistMeal(connection, meal);
                 connection.commit();
@@ -95,6 +104,7 @@ public class MealRepository {
             } finally {
                 connection.setAutoCommit(true);
             }
+
         } catch (SQLException e) {
             throw new IllegalStateException("식단을 저장하지 못했습니다.", e);
         }
@@ -104,7 +114,9 @@ public class MealRepository {
         try (Connection connection = DBUtil.getConnection();
              PreparedStatement deleteFoods = connection.prepareStatement("DELETE FROM meal_foods WHERE meal_id = ?");
              PreparedStatement deleteMeal = connection.prepareStatement("DELETE FROM meals WHERE meal_id = ?")) {
+
             connection.setAutoCommit(false);
+
             try {
                 deleteFoods.setString(1, mealId);
                 deleteFoods.executeUpdate();
@@ -119,6 +131,7 @@ public class MealRepository {
             } finally {
                 connection.setAutoCommit(true);
             }
+
         } catch (SQLException e) {
             throw new IllegalStateException("식단을 삭제하지 못했습니다.", e);
         }
@@ -127,8 +140,10 @@ public class MealRepository {
     private void initializeSchema() {
         try (Connection connection = DBUtil.getConnection();
              Statement statement = connection.createStatement()) {
+
             statement.executeUpdate(CREATE_MEALS_SQL);
             statement.executeUpdate(CREATE_MEAL_FOODS_SQL);
+
         } catch (SQLException e) {
             throw new IllegalStateException("MealRepository용 테이블을 초기화하지 못했습니다.", e);
         }
@@ -142,15 +157,18 @@ public class MealRepository {
         try (Connection connection = DBUtil.getConnection();
              PreparedStatement countStatement = connection.prepareStatement("SELECT COUNT(*) FROM meals");
              ResultSet resultSet = countStatement.executeQuery()) {
+
             if (resultSet.next() && resultSet.getInt(1) > 0) {
                 return;
             }
 
             connection.setAutoCommit(false);
+
             try {
                 for (Meal meal : seedMeals) {
                     persistMeal(connection, meal);
                 }
+
                 connection.commit();
             } catch (SQLException e) {
                 rollbackQuietly(connection);
@@ -158,6 +176,7 @@ public class MealRepository {
             } finally {
                 connection.setAutoCommit(true);
             }
+
         } catch (SQLException e) {
             throw new IllegalStateException("초기 식단 데이터를 적재하지 못했습니다.", e);
         }
@@ -175,7 +194,9 @@ public class MealRepository {
                 created_at = VALUES(created_at),
                 updated_at = VALUES(updated_at)
             """;
+
         String deleteFoodsSql = "DELETE FROM meal_foods WHERE meal_id = ?";
+
         String insertFoodSql = """
             INSERT INTO meal_foods (
                 meal_id, item_order, food_code, food_name, category, grams, energy, carbs, protein, fat
@@ -188,6 +209,7 @@ public class MealRepository {
         try (PreparedStatement upsertMeal = connection.prepareStatement(upsertMealSql);
              PreparedStatement deleteFoods = connection.prepareStatement(deleteFoodsSql);
              PreparedStatement insertFood = connection.prepareStatement(insertFoodSql)) {
+
             upsertMeal.setString(1, meal.getId());
             upsertMeal.setString(2, meal.getUserId());
             upsertMeal.setDate(3, Date.valueOf(meal.getMealDate()));
@@ -201,8 +223,10 @@ public class MealRepository {
             deleteFoods.executeUpdate();
 
             List<FoodItem> foods = meal.getFoods() == null ? List.of() : meal.getFoods();
+
             for (int index = 0; index < foods.size(); index++) {
                 FoodItem food = foods.get(index);
+
                 insertFood.setString(1, meal.getId());
                 insertFood.setInt(2, index);
                 insertFood.setString(3, food.getCode());
@@ -215,6 +239,7 @@ public class MealRepository {
                 insertFood.setDouble(10, food.getFat());
                 insertFood.addBatch();
             }
+
             insertFood.executeBatch();
         }
     }
@@ -224,6 +249,7 @@ public class MealRepository {
 
         try (Connection connection = DBUtil.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
+
             if (mealId != null) {
                 statement.setString(1, mealId);
             }
@@ -231,18 +257,22 @@ public class MealRepository {
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     String currentMealId = resultSet.getString("meal_id");
+
                     Meal meal = meals.get(currentMealId);
+
                     if (meal == null) {
                         meal = mapMeal(resultSet);
                         meals.put(currentMealId, meal);
                     }
 
                     String foodCode = resultSet.getString("food_code");
+
                     if (foodCode != null) {
                         meal.getFoods().add(mapFood(resultSet));
                     }
                 }
             }
+
         } catch (SQLException e) {
             throw new IllegalStateException("식단을 조회하지 못했습니다.", e);
         }
@@ -252,6 +282,7 @@ public class MealRepository {
 
     private Meal mapMeal(ResultSet resultSet) throws SQLException {
         Meal meal = new Meal();
+
         meal.setId(resultSet.getString("meal_id"));
         meal.setUserId(resultSet.getString("user_id"));
 
@@ -266,11 +297,13 @@ public class MealRepository {
 
         Timestamp updatedAt = resultSet.getTimestamp("updated_at");
         meal.setUpdatedAt(updatedAt == null ? null : updatedAt.toLocalDateTime());
+
         return meal;
     }
 
     private FoodItem mapFood(ResultSet resultSet) throws SQLException {
         FoodItem food = new FoodItem();
+
         food.setCode(resultSet.getString("food_code"));
         food.setName(resultSet.getString("food_name"));
         food.setCategory(resultSet.getString("category"));
@@ -279,6 +312,7 @@ public class MealRepository {
         food.setCarbs(resultSet.getDouble("carbs"));
         food.setProtein(resultSet.getDouble("protein"));
         food.setFat(resultSet.getDouble("fat"));
+
         return food;
     }
 

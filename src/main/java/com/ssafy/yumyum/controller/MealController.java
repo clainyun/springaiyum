@@ -1,207 +1,297 @@
 package com.ssafy.yumyum.controller;
 
+import com.ssafy.yumyum.exception.CustomException;
 import com.ssafy.yumyum.model.FoodItem;
 import com.ssafy.yumyum.model.FoodRecommendation;
 import com.ssafy.yumyum.model.Meal;
 import com.ssafy.yumyum.model.MealAnalysis;
 import com.ssafy.yumyum.model.User;
-import com.ssafy.yumyum.util.AppContainer;
-import com.ssafy.yumyum.util.BaseController;
+import com.ssafy.yumyum.repository.UserRepository;
+import com.ssafy.yumyum.service.MealService;
 import com.ssafy.yumyum.util.ServiceResult;
 import com.ssafy.yumyum.util.SessionUtils;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-@WebServlet(urlPatterns = {"/meals", "/meals/new", "/meals/detail", "/meals/edit", "/meals/delete"})
-public class MealController extends BaseController {
+@Controller
+@RequestMapping("/meals")
+public class MealController {
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        User user = requireLoginUser(req, resp);
-        if (user == null) {
-            return;
-        }
+    private final MealService mealService;
+    private final UserRepository userRepository;
 
-        String path = req.getServletPath();
-        if ("/meals".equals(path)) {
-            renderList(req, resp, user);
-            return;
-        }
-        if ("/meals/detail".equals(path)) {
-            renderDetail(req, resp, user);
-            return;
-        }
-        renderForm(req, resp, user, "/meals/edit".equals(path), null, null);
+    public MealController(MealService mealService, UserRepository userRepository) {
+        this.mealService = mealService;
+        this.userRepository = userRepository;
     }
 
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        User user = requireLoginUser(req, resp);
-        if (user == null) {
-            return;
-        }
-        String path = req.getServletPath();
-        if ("/meals/delete".equals(path)) {
-            AppContainer.getMealService().deleteMeal(user, req.getParameter("mealId"));
-            SessionUtils.flash(req.getSession(), "success", "식단을 삭제했습니다.");
-            redirect(req, resp, "/meals");
-            return;
-        }
-        if ("/meals/new".equals(path)) {
-            handleCreate(req, resp, user);
-            return;
-        }
-        handleUpdate(req, resp, user);
+    @GetMapping
+    public String list(HttpServletRequest request,
+                       @RequestParam(required = false) String startDate,
+                       @RequestParam(required = false) String endDate,
+                       @RequestParam(required = false) String mealType,
+                       @RequestParam(required = false) String sortKey,
+                       Model model) {
+
+        User user = getLoginUser(request);
+
+        LocalDate parsedStartDate = parseDate(startDate);
+        LocalDate parsedEndDate = parseDate(endDate);
+        String resolvedSortKey = valueOrDefault(sortKey, "dateDesc");
+
+        model.addAttribute("pageTitle", "식단 목록");
+        model.addAttribute("activeNav", "diet");
+        model.addAttribute("meals", mealService.getMealsForUser(
+                user.getId(),
+                parsedStartDate,
+                parsedEndDate,
+                mealType,
+                resolvedSortKey,
+                user
+        ));
+        model.addAttribute("sortKey", resolvedSortKey);
+        model.addAttribute("filterStart", startDate);
+        model.addAttribute("filterEnd", endDate);
+        model.addAttribute("filterMealType", mealType);
+
+        return "meal/list";
     }
 
-    private void renderList(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
-        LocalDate startDate = parseDate(req.getParameter("startDate"));
-        LocalDate endDate = parseDate(req.getParameter("endDate"));
-        String mealType = req.getParameter("mealType");
-        String sortKey = req.getParameter("sortKey");
+    @GetMapping("/detail")
+    public String detail(HttpServletRequest request,
+                         @RequestParam String mealId,
+                         Model model) {
 
-        req.setAttribute("pageTitle", "식단 목록");
-        req.setAttribute("activeNav", "diet");
-        req.setAttribute("meals", AppContainer.getMealService().getMealsForUser(user.getId(), startDate, endDate, mealType, sortKey, user));
-        req.setAttribute("sortKey", sortKey == null || sortKey.isEmpty() ? "dateDesc" : sortKey);
-        req.setAttribute("filterStart", req.getParameter("startDate"));
-        req.setAttribute("filterEnd", req.getParameter("endDate"));
-        req.setAttribute("filterMealType", mealType);
-        render(req, resp, "meal/list");
-    }
+        User user = getLoginUser(request);
 
-    private void renderDetail(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
-        Meal meal = AppContainer.getMealService().findById(req.getParameter("mealId"));
+        Meal meal = mealService.findById(mealId);
+
         if (meal == null || !user.getId().equals(meal.getUserId())) {
-            SessionUtils.flash(req.getSession(), "warning", "식단을 찾을 수 없습니다.");
-            redirect(req, resp, "/meals");
-            return;
-        }
-        MealAnalysis analysis = AppContainer.getMealService().analyzeMeal(meal, user);
-        req.setAttribute("pageTitle", "식단 상세");
-        req.setAttribute("activeNav", "diet");
-        req.setAttribute("meal", meal);
-        req.setAttribute("analysis", analysis);
-        req.setAttribute("dailyGoal", AppContainer.getMealService().calculateDailyGoal(user));
-        render(req, resp, "meal/detail");
-    }
-
-    private void renderForm(HttpServletRequest req, HttpServletResponse resp, User user, boolean editMode,
-                            Meal existingMeal, String errorMessage) throws ServletException, IOException {
-        Meal meal = existingMeal;
-        if (editMode && meal == null) {
-            meal = AppContainer.getMealService().findById(req.getParameter("mealId"));
-            if (meal == null || !user.getId().equals(meal.getUserId())) {
-                SessionUtils.flash(req.getSession(), "warning", "식단을 찾을 수 없습니다.");
-                redirect(req, resp, "/meals");
-                return;
-            }
+            SessionUtils.flash(request.getSession(), "warning", "식단을 찾을 수 없습니다.");
+            return "redirect:/meals";
         }
 
-        String keyword = req.getParameter("keyword");
-        List<FoodItem> selectedFoods = meal == null ? new ArrayList<>() : meal.getFoods();
-        List<FoodRecommendation> recommendations = AppContainer.getMealService().recommendFoods(
-            user,
-            meal == null ? valueOrDefault(req.getParameter("mealType"), "lunch") : meal.getMealType(),
-            selectedFoods,
-            6
-        );
+        MealAnalysis analysis = mealService.analyzeMeal(meal, user);
 
-        req.setAttribute("pageTitle", editMode ? "식단 수정" : "식단 등록");
-        req.setAttribute("activeNav", "diet");
-        req.setAttribute("editMode", editMode);
-        req.setAttribute("meal", meal);
-        req.setAttribute("errorMessage", errorMessage);
-        req.setAttribute("catalogFoods", AppContainer.getMealService().searchFoods(keyword));
-        req.setAttribute("keyword", keyword);
-        req.setAttribute("selectedCodeSet", selectedCodeSet(selectedFoods));
-        req.setAttribute("selectedFoods", selectedFoods);
-        req.setAttribute("recommendations", recommendations);
-        render(req, resp, "meal/form");
+        model.addAttribute("pageTitle", "식단 상세");
+        model.addAttribute("activeNav", "diet");
+        model.addAttribute("meal", meal);
+        model.addAttribute("analysis", analysis);
+        model.addAttribute("dailyGoal", mealService.calculateDailyGoal(user));
+
+        return "meal/detail";
     }
 
-    private void handleCreate(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
-        List<FoodItem> selectedFoods = selectedFoods(req);
-        ServiceResult<Meal> result = AppContainer.getMealService().createMeal(
-            user,
-            parseDate(req.getParameter("mealDate")),
-            valueOrDefault(req.getParameter("mealType"), "lunch"),
-            req.getParameter("memo"),
-            selectedFoods
+    @GetMapping("/new")
+    public String createForm(HttpServletRequest request,
+                             @RequestParam(required = false) String keyword,
+                             @RequestParam(required = false) String mealType,
+                             Model model) {
+
+        User user = getLoginUser(request);
+
+        Meal tempMeal = new Meal();
+        tempMeal.setMealType(valueOrDefault(mealType, "lunch"));
+
+        return renderForm(user, false, tempMeal, keyword, null, model);
+    }
+
+    @GetMapping("/edit")
+    public String editForm(HttpServletRequest request,
+                           @RequestParam String mealId,
+                           @RequestParam(required = false) String keyword,
+                           Model model) {
+
+        User user = getLoginUser(request);
+
+        Meal meal = mealService.findById(mealId);
+
+        if (meal == null || !user.getId().equals(meal.getUserId())) {
+            SessionUtils.flash(request.getSession(), "warning", "식단을 찾을 수 없습니다.");
+            return "redirect:/meals";
+        }
+
+        return renderForm(user, true, meal, keyword, null, model);
+    }
+
+    @PostMapping("/new")
+    public String create(HttpServletRequest request, Model model) {
+        User user = getLoginUser(request);
+
+        List<FoodItem> selectedFoods = selectedFoods(request);
+
+        ServiceResult<Meal> result = mealService.createMeal(
+                user,
+                parseDate(request.getParameter("mealDate")),
+                valueOrDefault(request.getParameter("mealType"), "lunch"),
+                request.getParameter("memo"),
+                selectedFoods
         );
+
         if (!result.isOk()) {
             Meal tempMeal = new Meal();
-            tempMeal.setMealDate(parseDate(req.getParameter("mealDate")));
-            tempMeal.setMealType(valueOrDefault(req.getParameter("mealType"), "lunch"));
-            tempMeal.setMemo(req.getParameter("memo"));
+            tempMeal.setMealDate(parseDate(request.getParameter("mealDate")));
+            tempMeal.setMealType(valueOrDefault(request.getParameter("mealType"), "lunch"));
+            tempMeal.setMemo(request.getParameter("memo"));
             tempMeal.setFoods(selectedFoods);
-            renderForm(req, resp, user, false, tempMeal, result.getMessage());
-            return;
+
+            return renderForm(user, false, tempMeal, request.getParameter("keyword"), result.getMessage(), model);
         }
-        SessionUtils.flash(req.getSession(), "success", result.getMessage());
-        redirect(req, resp, "/meals");
+
+        SessionUtils.flash(request.getSession(), "success", result.getMessage());
+
+        return "redirect:/meals";
     }
 
-    private void handleUpdate(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
-        String mealId = req.getParameter("mealId");
-        List<FoodItem> selectedFoods = selectedFoods(req);
-        ServiceResult<Meal> result = AppContainer.getMealService().updateMeal(
-            user,
-            mealId,
-            parseDate(req.getParameter("mealDate")),
-            valueOrDefault(req.getParameter("mealType"), "lunch"),
-            req.getParameter("memo"),
-            selectedFoods
+    @PostMapping("/edit")
+    public String update(HttpServletRequest request, Model model) {
+        User user = getLoginUser(request);
+
+        String mealId = request.getParameter("mealId");
+        List<FoodItem> selectedFoods = selectedFoods(request);
+
+        ServiceResult<Meal> result = mealService.updateMeal(
+                user,
+                mealId,
+                parseDate(request.getParameter("mealDate")),
+                valueOrDefault(request.getParameter("mealType"), "lunch"),
+                request.getParameter("memo"),
+                selectedFoods
         );
+
         if (!result.isOk()) {
-            Meal tempMeal = AppContainer.getMealService().findById(mealId);
+            Meal tempMeal = mealService.findById(mealId);
+
             if (tempMeal == null) {
                 tempMeal = new Meal();
                 tempMeal.setId(mealId);
             }
-            tempMeal.setMealDate(parseDate(req.getParameter("mealDate")));
-            tempMeal.setMealType(valueOrDefault(req.getParameter("mealType"), "lunch"));
-            tempMeal.setMemo(req.getParameter("memo"));
+
+            tempMeal.setMealDate(parseDate(request.getParameter("mealDate")));
+            tempMeal.setMealType(valueOrDefault(request.getParameter("mealType"), "lunch"));
+            tempMeal.setMemo(request.getParameter("memo"));
             tempMeal.setFoods(selectedFoods);
-            renderForm(req, resp, user, true, tempMeal, result.getMessage());
-            return;
+
+            return renderForm(user, true, tempMeal, request.getParameter("keyword"), result.getMessage(), model);
         }
-        SessionUtils.flash(req.getSession(), "success", result.getMessage());
-        redirect(req, resp, "/meals/detail?mealId=" + result.getData().getId());
+
+        SessionUtils.flash(request.getSession(), "success", result.getMessage());
+
+        return "redirect:/meals/detail?mealId=" + result.getData().getId();
     }
 
-    private List<FoodItem> selectedFoods(HttpServletRequest req) {
+    @PostMapping("/delete")
+    public String delete(HttpServletRequest request,
+                         @RequestParam String mealId) {
+
+        User user = getLoginUser(request);
+
+        mealService.deleteMeal(user, mealId);
+        SessionUtils.flash(request.getSession(), "success", "식단을 삭제했습니다.");
+
+        return "redirect:/meals";
+    }
+
+    private String renderForm(User user,
+                              boolean editMode,
+                              Meal meal,
+                              String keyword,
+                              String errorMessage,
+                              Model model) {
+
+        List<FoodItem> selectedFoods = meal == null || meal.getFoods() == null
+                ? new ArrayList<>()
+                : meal.getFoods();
+
+        String mealType = meal == null
+                ? "lunch"
+                : valueOrDefault(meal.getMealType(), "lunch");
+
+        List<FoodRecommendation> recommendations = mealService.recommendFoods(
+                user,
+                mealType,
+                selectedFoods,
+                6
+        );
+
+        model.addAttribute("pageTitle", editMode ? "식단 수정" : "식단 등록");
+        model.addAttribute("activeNav", "diet");
+        model.addAttribute("editMode", editMode);
+        model.addAttribute("meal", meal);
+        model.addAttribute("errorMessage", errorMessage);
+        model.addAttribute("catalogFoods", mealService.searchFoods(keyword));
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("selectedCodeSet", selectedCodeSet(selectedFoods));
+        model.addAttribute("selectedFoods", selectedFoods);
+        model.addAttribute("recommendations", recommendations);
+
+        return "meal/form";
+    }
+
+    private List<FoodItem> selectedFoods(HttpServletRequest request) {
         List<FoodItem> foods = new ArrayList<>();
-        String[] codes = req.getParameterValues("foodCode");
+
+        String[] codes = request.getParameterValues("foodCode");
+
         if (codes == null) {
             return foods;
         }
+
         for (String code : codes) {
-            FoodItem base = AppContainer.getMealService().findFood(code);
+            FoodItem base = mealService.findFood(code);
+
             if (base == null) {
                 continue;
             }
-            double grams = parseDouble(req.getParameter("grams_" + code), 100);
+
+            double grams = parseDouble(request.getParameter("grams_" + code), 100);
             foods.add(base.copyWithGrams(grams));
         }
+
         return foods;
     }
 
     private Set<String> selectedCodeSet(List<FoodItem> foods) {
         Set<String> selected = new HashSet<>();
+
+        if (foods == null) {
+            return selected;
+        }
+
         for (FoodItem food : foods) {
             selected.add(food.getCode());
         }
+
         return selected;
+    }
+
+    private User getLoginUser(HttpServletRequest request) {
+        String loginUserId = SessionUtils.currentUserId(request);
+
+        if (loginUserId == null) {
+            throw new CustomException(401, "로그인이 필요합니다.");
+        }
+
+        User user = userRepository.findById(loginUserId);
+
+        if (user == null || !user.isActive()) {
+            throw new CustomException(401, "로그인 정보를 찾을 수 없습니다.");
+        }
+
+        return user;
     }
 
     private LocalDate parseDate(String raw) {
