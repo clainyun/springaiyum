@@ -9,7 +9,9 @@ import com.ssafy.yumyum.model.MealAnalysis;
 import com.ssafy.yumyum.model.NutritionSummary;
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.model.WorkoutSession;
-import com.ssafy.yumyum.util.AppContainer;
+import com.ssafy.yumyum.service.ChallengeService;
+import com.ssafy.yumyum.service.CoachService;
+import com.ssafy.yumyum.service.MealService;
 import com.ssafy.yumyum.util.SessionUtils;
 import com.ssafy.yumyum.util.ViewHelper;
 
@@ -31,6 +33,16 @@ import org.springframework.web.bind.annotation.ResponseBody;
 public class CoachController {
 
     private static final String COACH_INDEX_VIEW = "coach/index";
+
+    private final MealService mealService;
+    private final CoachService coachService;
+    private final ChallengeService challengeService;
+
+    public CoachController(MealService mealService, CoachService coachService, ChallengeService challengeService) {
+        this.mealService = mealService;
+        this.coachService = coachService;
+        this.challengeService = challengeService;
+    }
 
     @ModelAttribute
     public void exposeFlash(HttpServletRequest req) {
@@ -55,9 +67,9 @@ public class CoachController {
     @GetMapping("/dashboard")
     @ResponseBody
     public ResponseEntity<?> getCoachDashboard(@RequestAttribute("currentUser") User user) {
-        List<Meal> meals = AppContainer.getMealService().getMealsForUser(user.getId(), null, null, null, "dateDesc", user);
-        CoachAdvice advice = AppContainer.getCoachService().buildAdvice(user);
-        DailyGoal goal = AppContainer.getMealService().calculateDailyGoal(user);
+        List<Meal> meals = mealService.getMealsForUser(user.getId(), null, null, null, "dateDesc", user);
+        CoachAdvice advice = coachService.buildAdvice(user);
+        DailyGoal goal = mealService.calculateDailyGoal(user);
 
         List<com.ssafy.yumyum.model.FoodItem> todayFoods = new ArrayList<>();
         for (Meal meal : meals) {
@@ -66,12 +78,12 @@ public class CoachController {
             }
         }
 
-        NutritionSummary todaySummary = AppContainer.getMealService().summarize(todayFoods);
+        NutritionSummary todaySummary = mealService.summarize(todayFoods);
         int todayPct = goal.getCalories() == 0 ? 0 : (int) Math.round((todaySummary.getCalories() / goal.getCalories()) * 100);
 
         List<ChallengeCard> challenges = new ArrayList<>();
-        for (ChallengeMembership membership : AppContainer.getChallengeService().membershipsForUser(user.getId())) {
-            Challenge challenge = AppContainer.getChallengeService().findChallenge(membership.getChallengeId());
+        for (ChallengeMembership membership : challengeService.membershipsForUser(user.getId())) {
+            Challenge challenge = challengeService.findChallenge(membership.getChallengeId());
             challenges.add(new ChallengeCard(
                 membership.getChallengeId(),
                 challenge == null ? "챌린지" : challenge.getTitle(),

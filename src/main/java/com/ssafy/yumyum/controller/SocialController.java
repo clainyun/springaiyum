@@ -1,7 +1,8 @@
 package com.ssafy.yumyum.controller;
 
 import com.ssafy.yumyum.model.User;
-import com.ssafy.yumyum.util.AppContainer;
+import com.ssafy.yumyum.service.SocialService;
+import com.ssafy.yumyum.service.UserService;
 import com.ssafy.yumyum.util.ServiceResult;
 import com.ssafy.yumyum.util.SessionUtils;
 
@@ -30,6 +31,14 @@ public class SocialController {
     private static final String SOCIAL_INDEX_VIEW = "social/index";
     private static final String SOCIAL_REDIRECT = "redirect:/social";
 
+    private final UserService userService;
+    private final SocialService socialService;
+
+    public SocialController(UserService userService, SocialService socialService) {
+        this.userService = userService;
+        this.socialService = socialService;
+    }
+
     @ModelAttribute
     public void exposeFlash(HttpServletRequest request) {
         SessionUtils.exposeFlash(request);
@@ -55,7 +64,7 @@ public class SocialController {
             return null;
         }
 
-        User user = AppContainer.getUserService().findById(loginUserId);
+        User user = userService.findById(loginUserId);
 
         if (user == null || !user.isActive()) {
             SessionUtils.flash(request.getSession(), "warning", "로그인이 필요한 메뉴입니다.");
@@ -71,16 +80,16 @@ public class SocialController {
             return LOGIN_REDIRECT;
         }
 
-        List<User> following = AppContainer.getSocialService().getFollowing(user.getId());
-        List<User> followers = AppContainer.getSocialService().getFollowers(user.getId());
-        List<User> suggestions = AppContainer.getSocialService().getSuggestions(user.getId(), 6);
-        List<User> leaderboard = AppContainer.getSocialService().getLeaderboard(user.getId(), 5);
+        List<User> following = socialService.getFollowing(user.getId());
+        List<User> followers = socialService.getFollowers(user.getId());
+        List<User> suggestions = socialService.getSuggestions(user.getId(), 6);
+        List<User> leaderboard = socialService.getLeaderboard(user.getId(), 5);
 
         List<User> countTargets = new ArrayList<>();
         countTargets.addAll(suggestions);
         countTargets.addAll(leaderboard);
 
-        Map<String, Integer> followerCounts = AppContainer.getSocialService().followerCountMap(countTargets);
+        Map<String, Integer> followerCounts = socialService.followerCountMap(countTargets);
 
         Set<String> followingIds = new HashSet<>();
         for (User followingUser : following) {
@@ -109,10 +118,10 @@ public class SocialController {
         }
 
         if ("follow".equals(action)) {
-            ServiceResult<Void> result = AppContainer.getSocialService().follow(user.getId(), targetUserId);
+            ServiceResult<Void> result = socialService.follow(user.getId(), targetUserId);
             SessionUtils.flash(request.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
         } else if ("unfollow".equals(action)) {
-            AppContainer.getSocialService().unfollow(user.getId(), targetUserId);
+            socialService.unfollow(user.getId(), targetUserId);
             SessionUtils.flash(request.getSession(), "info", "팔로우를 해제했습니다.");
         }
 

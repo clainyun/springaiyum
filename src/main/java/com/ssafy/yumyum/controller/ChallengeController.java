@@ -3,7 +3,7 @@ package com.ssafy.yumyum.controller;
 import com.ssafy.yumyum.model.Challenge;
 import com.ssafy.yumyum.model.ChallengeMembership;
 import com.ssafy.yumyum.model.User;
-import com.ssafy.yumyum.util.AppContainer;
+import com.ssafy.yumyum.service.ChallengeService;
 import com.ssafy.yumyum.util.ServiceResult;
 import com.ssafy.yumyum.util.SessionUtils;
 import com.ssafy.yumyum.util.ViewHelper;
@@ -34,6 +34,12 @@ public class ChallengeController {
     private static final String CHALLENGE_INDEX_VIEW = "challenge/index";
     private static final String CHALLENGES_REDIRECT = "redirect:/challenges";
 
+    private final ChallengeService challengeService;
+
+    public ChallengeController(ChallengeService challengeService) {
+        this.challengeService = challengeService;
+    }
+
     @ModelAttribute
     public void exposeFlash(HttpServletRequest req) {
         SessionUtils.exposeFlash(req);
@@ -59,14 +65,14 @@ public class ChallengeController {
 
     @GetMapping
     public String getChallenges(@RequestAttribute("currentUser") User user, Model model) {
-        List<Challenge> challenges = AppContainer.getChallengeService().getChallenges();
-        Map<String, ChallengeMembership> membershipMap = AppContainer.getChallengeService().membershipMap(user.getId());
+        List<Challenge> challenges = challengeService.getChallenges();
+        Map<String, ChallengeMembership> membershipMap = challengeService.membershipMap(user.getId());
 
         model.addAttribute("challenges", challenges);
         model.addAttribute("membershipMap", membershipMap);
-        model.addAttribute("participantMap", AppContainer.getChallengeService().participantMap(challenges));
-        model.addAttribute("joinedCount", AppContainer.getChallengeService().countJoined(user.getId()));
-        model.addAttribute("completedCount", AppContainer.getChallengeService().countCompleted(user.getId()));
+        model.addAttribute("participantMap", challengeService.participantMap(challenges));
+        model.addAttribute("joinedCount", challengeService.countJoined(user.getId()));
+        model.addAttribute("completedCount", challengeService.countCompleted(user.getId()));
         model.addAttribute("createdCount", createdCount(challenges, user.getId()));
         model.addAttribute("challengeCount", challenges.size());
         model.addAttribute("periodLabelMap", periodLabelMap(challenges));
@@ -81,7 +87,7 @@ public class ChallengeController {
         @ModelAttribute("challengeForm") ChallengeForm form,
         HttpServletRequest req
     ) {
-        ServiceResult<?> result = AppContainer.getChallengeService().createChallenge(
+        ServiceResult<?> result = challengeService.createChallenge(
             user,
             form.getTitle(),
             form.getDescription(),
@@ -99,7 +105,7 @@ public class ChallengeController {
         @PathVariable String challengeId,
         HttpServletRequest req
     ) {
-        ServiceResult<?> result = AppContainer.getChallengeService().joinChallenge(challengeId, user.getId());
+        ServiceResult<?> result = challengeService.joinChallenge(challengeId, user.getId());
         SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
         return CHALLENGES_REDIRECT;
     }
@@ -111,7 +117,7 @@ public class ChallengeController {
         @RequestParam(required = false) String progress,
         HttpServletRequest req
     ) {
-        ServiceResult<?> result = AppContainer.getChallengeService().updateProgress(
+        ServiceResult<?> result = challengeService.updateProgress(
             challengeId,
             user.getId(),
             parseInt(progress, 0)
@@ -126,7 +132,7 @@ public class ChallengeController {
         @PathVariable String challengeId,
         HttpServletRequest req
     ) {
-        AppContainer.getChallengeService().leaveChallenge(challengeId, user.getId());
+        challengeService.leaveChallenge(challengeId, user.getId());
         SessionUtils.flash(req.getSession(), "info", "챌린지에서 나갔습니다.");
         return CHALLENGES_REDIRECT;
     }
@@ -137,7 +143,7 @@ public class ChallengeController {
         @PathVariable String challengeId,
         HttpServletRequest req
     ) {
-        AppContainer.getChallengeService().deleteChallenge(challengeId, user);
+        challengeService.deleteChallenge(challengeId, user);
         SessionUtils.flash(req.getSession(), "success", "챌린지를 삭제했습니다.");
         return CHALLENGES_REDIRECT;
     }

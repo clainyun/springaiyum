@@ -3,6 +3,7 @@ package com.ssafy.yumyum.repository;
 import com.ssafy.yumyum.model.FoodItem;
 import com.ssafy.yumyum.model.Meal;
 import com.ssafy.yumyum.util.DBUtil;
+import com.ssafy.yumyum.util.SeedDataFactory;
 
 import org.springframework.stereotype.Repository;
 
@@ -55,7 +56,7 @@ public class MealRepository {
         """;
 
     public MealRepository() {
-        initializeSchema();
+        this(SeedDataFactory.meals());
     }
 
     public MealRepository(List<Meal> seedMeals) {

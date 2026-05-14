@@ -14,6 +14,9 @@ import com.ssafy.yumyum.model.NutritionSummary;
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.model.WorkoutSession;
 
+import org.springframework.stereotype.Service;
+
+@Service
 public class CoachService {
 
     private final MealService mealService;

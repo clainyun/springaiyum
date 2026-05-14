@@ -6,10 +6,18 @@ import java.util.List;
 import java.util.Map;
 
 import com.ssafy.yumyum.model.FollowRelation;
+import com.ssafy.yumyum.util.SeedDataFactory;
 
+import org.springframework.stereotype.Repository;
+
+@Repository
 public class SocialRepository {
 
     private final Map<String, FollowRelation> follows = new LinkedHashMap<>();
+
+    public SocialRepository() {
+        this(SeedDataFactory.follows());
+    }
 
     public SocialRepository(List<FollowRelation> seedRelations) {
         for (FollowRelation relation : seedRelations) {

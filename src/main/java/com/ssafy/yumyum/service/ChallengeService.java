@@ -10,6 +10,8 @@ import com.ssafy.yumyum.util.IdGenerator;
 import com.ssafy.yumyum.util.ServiceResult;
 import com.ssafy.yumyum.util.SortUtils;
 
+import org.springframework.stereotype.Service;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -17,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Service
 public class ChallengeService {
 
     private final ChallengeRepository challengeRepository;

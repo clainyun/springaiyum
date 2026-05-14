@@ -4,7 +4,7 @@ import com.ssafy.yumyum.model.CommunityComment;
 import com.ssafy.yumyum.model.CommunityPost;
 import com.ssafy.yumyum.model.Meal;
 import com.ssafy.yumyum.model.User;
-import com.ssafy.yumyum.util.AppContainer;
+import com.ssafy.yumyum.service.CommunityService;
 import com.ssafy.yumyum.util.ServiceResult;
 import com.ssafy.yumyum.util.SessionUtils;
 import com.ssafy.yumyum.util.ViewHelper;
@@ -33,6 +33,12 @@ public class CommunityController {
 
     private static final String COMMUNITY_REDIRECT = "redirect:/community";
     private static final String COMMUNITY_INDEX_VIEW = "community/index";
+
+    private final CommunityService communityService;
+
+    public CommunityController(CommunityService communityService) {
+        this.communityService = communityService;
+    }
 
     @ModelAttribute
     public void exposeFlash(HttpServletRequest req) {
@@ -66,7 +72,7 @@ public class CommunityController {
         HttpServletRequest req,
         Model model
     ) {
-        CommunityPost post = AppContainer.getCommunityService().findPost(postId);
+        CommunityPost post = communityService.findPost(postId);
         if (post == null) {
             SessionUtils.flash(req.getSession(), "warning", "수정할 게시글이 없습니다.");
             return redirectToCommunity(resolveSelectedCategory(category, null));
@@ -86,7 +92,7 @@ public class CommunityController {
         HttpServletRequest req,
         Model model
     ) {
-        CommunityComment comment = AppContainer.getCommunityService().findComment(commentId);
+        CommunityComment comment = communityService.findComment(commentId);
         if (comment == null) {
             SessionUtils.flash(req.getSession(), "warning", "수정할 댓글이 없습니다.");
             return redirectToCommunity(resolveSelectedCategory(category, null));
@@ -107,7 +113,7 @@ public class CommunityController {
         @RequestParam(required = false) String content,
         HttpServletRequest req
     ) {
-        ServiceResult<?> result = AppContainer.getCommunityService().createPost(user, category, linkedMealId, title, content);
+        ServiceResult<?> result = communityService.createPost(user, category, linkedMealId, title, content);
         SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
         return redirectToCommunity(resolveSelectedCategory(category, null));
     }
@@ -122,7 +128,7 @@ public class CommunityController {
         @RequestParam(required = false) String content,
         HttpServletRequest req
     ) {
-        ServiceResult<?> result = AppContainer.getCommunityService().updatePost(user, postId, category, linkedMealId, title, content);
+        ServiceResult<?> result = communityService.updatePost(user, postId, category, linkedMealId, title, content);
         SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
         return redirectToCommunity(resolveSelectedCategory(category, categoryForPostId(postId)));
     }
@@ -135,7 +141,7 @@ public class CommunityController {
         HttpServletRequest req
     ) {
         String fallbackCategory = categoryForPostId(postId);
-        AppContainer.getCommunityService().deletePost(user, postId);
+        communityService.deletePost(user, postId);
         SessionUtils.flash(req.getSession(), "success", "게시글을 삭제했습니다.");
         return redirectToCommunity(resolveSelectedCategory(redirectCategory, fallbackCategory));
     }
@@ -148,7 +154,7 @@ public class CommunityController {
         @RequestParam(required = false) String redirectCategory,
         HttpServletRequest req
     ) {
-        ServiceResult<?> result = AppContainer.getCommunityService().addComment(user, postId, commentContent);
+        ServiceResult<?> result = communityService.addComment(user, postId, commentContent);
         SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
         return redirectToCommunity(resolveSelectedCategory(redirectCategory, categoryForPostId(postId)));
     }
@@ -162,7 +168,7 @@ public class CommunityController {
         HttpServletRequest req
     ) {
         String fallbackCategory = categoryForCommentId(commentId);
-        ServiceResult<?> result = AppContainer.getCommunityService().updateComment(user, commentId, commentContent);
+        ServiceResult<?> result = communityService.updateComment(user, commentId, commentContent);
         SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
         return redirectToCommunity(resolveSelectedCategory(redirectCategory, fallbackCategory));
     }
@@ -175,7 +181,7 @@ public class CommunityController {
         HttpServletRequest req
     ) {
         String fallbackCategory = categoryForCommentId(commentId);
-        AppContainer.getCommunityService().deleteComment(user, commentId);
+        communityService.deleteComment(user, commentId);
         SessionUtils.flash(req.getSession(), "info", "댓글을 삭제했습니다.");
         return redirectToCommunity(resolveSelectedCategory(redirectCategory, fallbackCategory));
     }
@@ -187,10 +193,10 @@ public class CommunityController {
         CommunityComment editComment,
         Model model
     ) {
-        List<CommunityPost> posts = AppContainer.getCommunityService().getPosts(selectedCategory);
-        Map<String, List<CommunityComment>> commentMap = AppContainer.getCommunityService().commentMap(posts);
-        List<Meal> meals = AppContainer.getCommunityService().mealsForUser(user.getId());
-        Map<String, User> authorMap = AppContainer.getCommunityService().authorMap(posts, commentMap);
+        List<CommunityPost> posts = communityService.getPosts(selectedCategory);
+        Map<String, List<CommunityComment>> commentMap = communityService.commentMap(posts);
+        List<Meal> meals = communityService.mealsForUser(user.getId());
+        Map<String, User> authorMap = communityService.authorMap(posts, commentMap);
 
         model.addAttribute("posts", posts);
         model.addAttribute("commentMap", commentMap);
@@ -224,12 +230,12 @@ public class CommunityController {
     }
 
     private String categoryForPostId(String postId) {
-        CommunityPost post = AppContainer.getCommunityService().findPost(postId);
+        CommunityPost post = communityService.findPost(postId);
         return post == null ? null : post.getCategory();
     }
 
     private String categoryForCommentId(String commentId) {
-        CommunityComment comment = AppContainer.getCommunityService().findComment(commentId);
+        CommunityComment comment = communityService.findComment(commentId);
         return categoryForComment(comment);
     }
 

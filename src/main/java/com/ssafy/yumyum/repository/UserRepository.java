@@ -14,6 +14,7 @@ import java.util.Objects;
 
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.util.DBUtil;
+import com.ssafy.yumyum.util.SeedDataFactory;
 
 @Repository
 public class UserRepository {
@@ -43,7 +44,7 @@ public class UserRepository {
     }
 
     public UserRepository() {
-        initializeSchema();
+        this(SeedDataFactory.users());
     }
 
     public synchronized List<User> findAll() {

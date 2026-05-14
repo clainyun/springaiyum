@@ -3,8 +3,9 @@ package com.ssafy.yumyum.controller;
 import com.ssafy.yumyum.exception.CustomException;
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.repository.UserRepository;
+import com.ssafy.yumyum.service.ChallengeService;
 import com.ssafy.yumyum.service.MealService;
-import com.ssafy.yumyum.util.AppContainer;
+import com.ssafy.yumyum.service.SocialService;
 import com.ssafy.yumyum.util.SessionUtils;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,10 +21,17 @@ public class ProfileController {
 
     private final UserRepository userRepository;
     private final MealService mealService;
+    private final SocialService socialService;
+    private final ChallengeService challengeService;
 
-    public ProfileController(UserRepository userRepository, MealService mealService) {
+    public ProfileController(UserRepository userRepository,
+                             MealService mealService,
+                             SocialService socialService,
+                             ChallengeService challengeService) {
         this.userRepository = userRepository;
         this.mealService = mealService;
+        this.socialService = socialService;
+        this.challengeService = challengeService;
     }
 
     @GetMapping("/profile")
@@ -35,9 +43,9 @@ public class ProfileController {
         model.addAttribute("currentUser", user);
         model.addAttribute("dailyGoal", mealService.calculateDailyGoal(user));
         model.addAttribute("mealCount", mealService.getMealsForUser(user.getId()).size());
-        model.addAttribute("followingCount", AppContainer.getSocialService().countFollowing(user.getId()));
-        model.addAttribute("followerCount", AppContainer.getSocialService().countFollowers(user.getId()));
-        model.addAttribute("joinedChallengeCount", AppContainer.getChallengeService().countJoined(user.getId()));
+        model.addAttribute("followingCount", socialService.countFollowing(user.getId()));
+        model.addAttribute("followerCount", socialService.countFollowers(user.getId()));
+        model.addAttribute("joinedChallengeCount", challengeService.countJoined(user.getId()));
 
         return "profile/index";
     }
@@ -111,9 +119,9 @@ public class ProfileController {
         model.addAttribute("currentUser", user);
         model.addAttribute("dailyGoal", mealService.calculateDailyGoal(user));
         model.addAttribute("mealCount", mealService.getMealsForUser(user.getId()).size());
-        model.addAttribute("followingCount", AppContainer.getSocialService().countFollowing(user.getId()));
-        model.addAttribute("followerCount", AppContainer.getSocialService().countFollowers(user.getId()));
-        model.addAttribute("joinedChallengeCount", AppContainer.getChallengeService().countJoined(user.getId()));
+        model.addAttribute("followingCount", socialService.countFollowing(user.getId()));
+        model.addAttribute("followerCount", socialService.countFollowers(user.getId()));
+        model.addAttribute("joinedChallengeCount", challengeService.countJoined(user.getId()));
         model.addAttribute("errorMessage", errorMessage);
 
         return "profile/index";

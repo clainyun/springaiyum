@@ -7,11 +7,19 @@ import java.util.Map;
 
 import com.ssafy.yumyum.model.Challenge;
 import com.ssafy.yumyum.model.ChallengeMembership;
+import com.ssafy.yumyum.util.SeedDataFactory;
 
+import org.springframework.stereotype.Repository;
+
+@Repository
 public class ChallengeRepository {
 
     private final Map<String, Challenge> challenges = new LinkedHashMap<>();
     private final Map<String, ChallengeMembership> memberships = new LinkedHashMap<>();
+
+    public ChallengeRepository() {
+        this(SeedDataFactory.challenges(), SeedDataFactory.memberships());
+    }
 
     public ChallengeRepository(List<Challenge> seedChallenges, List<ChallengeMembership> seedMemberships) {
         for (Challenge challenge : seedChallenges) {

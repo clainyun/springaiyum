@@ -9,8 +9,10 @@ import com.ssafy.yumyum.model.Meal;
 import com.ssafy.yumyum.model.NutritionSummary;
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.repository.UserRepository;
+import com.ssafy.yumyum.service.ChallengeService;
+import com.ssafy.yumyum.service.CoachService;
 import com.ssafy.yumyum.service.MealService;
-import com.ssafy.yumyum.util.AppContainer;
+import com.ssafy.yumyum.service.SocialService;
 import com.ssafy.yumyum.util.SessionUtils;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,10 +30,20 @@ public class HomeController {
 
     private final UserRepository userRepository;
     private final MealService mealService;
+    private final CoachService coachService;
+    private final ChallengeService challengeService;
+    private final SocialService socialService;
 
-    public HomeController(UserRepository userRepository, MealService mealService) {
+    public HomeController(UserRepository userRepository,
+                          MealService mealService,
+                          CoachService coachService,
+                          ChallengeService challengeService,
+                          SocialService socialService) {
         this.userRepository = userRepository;
         this.mealService = mealService;
+        this.coachService = coachService;
+        this.challengeService = challengeService;
+        this.socialService = socialService;
     }
 
     @GetMapping({"/", "/home"})
@@ -60,8 +72,8 @@ public class HomeController {
         NutritionSummary todaySummary = mealService.summarize(todayFoods);
         DailyGoal dailyGoal = mealService.calculateDailyGoal(user);
 
-        CoachAdvice coachAdvice = AppContainer.getCoachService().buildAdvice(user);
-        List<Challenge> challenges = AppContainer.getChallengeService().getChallenges();
+        CoachAdvice coachAdvice = coachService.buildAdvice(user);
+        List<Challenge> challenges = challengeService.getChallenges();
 
         model.addAttribute("pageTitle", "대시보드");
         model.addAttribute("activeNav", "home");
@@ -70,8 +82,8 @@ public class HomeController {
         model.addAttribute("dailyGoal", dailyGoal);
         model.addAttribute("coachAdvice", coachAdvice);
         model.addAttribute("activeChallenges", challenges.subList(0, Math.min(3, challenges.size())));
-        model.addAttribute("followingCount", AppContainer.getSocialService().countFollowing(user.getId()));
-        model.addAttribute("followerCount", AppContainer.getSocialService().countFollowers(user.getId()));
+        model.addAttribute("followingCount", socialService.countFollowing(user.getId()));
+        model.addAttribute("followerCount", socialService.countFollowers(user.getId()));
 
         return "home/index";
     }

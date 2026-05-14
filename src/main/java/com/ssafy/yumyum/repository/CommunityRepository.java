@@ -14,7 +14,11 @@ import java.util.Objects;
 import com.ssafy.yumyum.model.CommunityComment;
 import com.ssafy.yumyum.model.CommunityPost;
 import com.ssafy.yumyum.util.DBUtil;
+import com.ssafy.yumyum.util.SeedDataFactory;
 
+import org.springframework.stereotype.Repository;
+
+@Repository
 public class CommunityRepository {
 
     private static final String CREATE_POSTS_SQL = """
@@ -59,6 +63,10 @@ public class CommunityRepository {
         """;
     private static final String FIND_ALL_COMMENTS_SQL = COMMENT_SELECT_COLUMNS + " ORDER BY created_at ASC, comment_id ASC";
     private static final String FIND_COMMENT_BY_ID_SQL = COMMENT_SELECT_COLUMNS + " WHERE comment_id = ?";
+
+    public CommunityRepository() {
+        this(SeedDataFactory.posts(), SeedDataFactory.comments());
+    }
 
     public CommunityRepository(List<CommunityPost> seedPosts, List<CommunityComment> seedComments) {
         initializeSchema();
