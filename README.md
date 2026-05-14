@@ -7,9 +7,7 @@
 
 기존 Servlet/JSP 기반 YumYumCoach 프로젝트를 Spring Boot 기반 구조로 전환했습니다.
 
-회원 인증, 프로필 관리, 식단 관리, 커뮤니티, 챌린지, AI 코치, 소셜 기능을 Spring MVC 방식으로 정리했고, MySQL DB와 연동해 회원과 식단 데이터를 저장하도록 구성했습니다.
-
----
+회원 인증, 프로필 관리, 식단 관리, 커뮤니티, 챌린지, AI 코치, 소셜 기능의 요청 흐름을 Spring MVC 방식으로 정리했고, MySQL DB와 연동해 회원과 식단 데이터를 저장하도록 구성했습니다.
 
 ## 실행 환경
 
@@ -19,43 +17,23 @@
 - MySQL
 - JSP
 - JDBC
-- MySQL Workbench
-  `dbyum` 산출물을 기준으로, DB 연동 구조를 유지하면서 화면 흐름과 서버 구조를 Spring MVC 방식에 맞게 정리했습니다.
-
----
 
 ## AS-IS
 
-- Servlet의 `doGet`, `doPost` 중심으로 요청을 처리했습니다.
+- Servlet의 `doGet`, `doPost`와 액션 파라미터 중심으로 요청을 처리했습니다.
 - `BaseController`, `AppContainer` 중심의 수동 객체 관리 방식이 많았습니다.
-- 일부 기능은 메모리 또는 직접 생성된 Repository 객체에 의존했습니다.
-- 로그인 여부 확인 로직이 각 Controller에 흩어져 있었습니다.
-- 오류 발생 시 공통 예외 처리 흐름이 부족했습니다.
-- 기능별 요청 처리가 서블릿과 액션 파라미터 중심으로 분산되어 있었습니다.
-- 로그인 확인과 세션 검증 로직이 여러 컨트롤러에 중복되어 있었습니다.
-- 예외 상황을 공통으로 처리하는 핸들러와 에러 화면 구성이 부족했습니다.
+- 로그인 확인과 세션 검증 로직이 여러 Controller에 중복되어 있었습니다.
 - JSP에 스크립틀릿과 직접 URL 조합이 많아 화면 유지보수가 번거로웠습니다.
-- 의존성 연결과 화면 흐름이 수동 구성 위주라 확장 포인트가 제한적이었습니다.
-
----
+- 예외 상황을 공통으로 처리하는 흐름과 에러 화면 구성이 부족했습니다.
 
 ## TO-BE
 
-- Spring Boot 프로젝트로 전환했습니다.
-- `@Controller`, `@Service`, `@Repository`를 적용해 Spring Bean 기반으로 관리했습니다.
-- `application.properties`에서 DB 연결 정보와 JSP View Resolver를 설정했습니다.
-- 로그인 확인은 `LoginCheckFilter`에서 공통 처리하도록 구성했습니다.
-- `CustomException`, `GlobalExceptionHandler`를 통해 공통 예외 화면을 제공했습니다.
-- 회원, 프로필, 식단 기능은 Spring MVC 방식으로 전환했습니다.
-- 식단 데이터는 `meals`, `meal_foods`, `food_nutrition` 테이블과 연동했습니다.
+- Spring Boot 프로젝트로 전환하고 `@Controller`, `@Service`, `@Repository` 기반으로 구성했습니다.
 - 주요 화면과 기능을 Spring MVC 컨트롤러 및 RESTful 경로 중심으로 재구성했습니다.
+- `application.properties`에서 DB 연결 정보와 JSP View Resolver를 설정했습니다.
 - `LoginCheckFilter`, `SessionUtils`로 인증, 세션, 플래시 메시지 처리를 공통화했습니다.
 - `CustomException`, `GlobalExceptionHandler`, 에러 페이지를 추가해 예외 응답 흐름을 정리했습니다.
-- 커뮤니티, 챌린지, 코치 화면 JSP를 JSTL/EL 기반으로 정리하고 URL 매핑을 단순화했습니다.
-- `AppContainer` 수동 의존성 연결을 줄이고 Repository, Service를 스프링 빈 중심으로 전환했습니다.
-- 실행 화면, 클래스 다이어그램, ERD를 `resources`에 정리해 문서화를 보완했습니다.
-
----
+- 식단 데이터는 `users`, `meals`, `meal_foods`, `food_nutrition` 테이블과 연동하도록 구성했습니다.
 
 ## 주요 기능
 
@@ -71,8 +49,6 @@
 | 챌린지      | 챌린지 생성, 참여, 진행률 수정, 탈퇴, 삭제  |
 | 소셜        | 팔로우, 언팔로우, 추천 사용자, 리더보드     |
 | 예외 처리   | 커스텀 예외 및 공통 오류 화면               |
-
----
 
 ## 프로젝트 구조
 
@@ -115,8 +91,6 @@ src/main/java/com/ssafy/yumyum
 └── util
 ```
 
----
-
 ## DB 설계
 
 이번 Spring 프로젝트에서는 실제 코드 기준에 맞춰 아래 테이블을 사용했습니다.
@@ -136,52 +110,15 @@ src/main/java/com/ssafy/yumyum
 | `meals` 1 : N `meal_foods`          | 한 식단은 여러 음식을 포함할 수 있습니다.        |
 | `food_nutrition` 1 : N `meal_foods` | 음식 영양정보를 기준으로 식단 음식을 선택합니다. |
 
----
+## 다이어그램
 
-## ERD
+### ERD
 
-![ERD](./src/main/resources/er-diagram.png)
+![ERD](./assets/ssafy_yumyumcoach.png)
 
----
-
-## 클래스 다이어그램
+### 클래스 다이어그램
 
 ![Class Diagram](./src/main/resources/class-diagram.jpeg)
-
----
-
-## 실행 화면
-
-### 메인 화면
-
-![메인화면](./src/main/resources/images/메인화면.png)
-
-### 소셜 화면
-
-![소셜](./src/main/resources/images/소셜.png)
-
-### 식단 기록 화면
-
-![식단기록](./src/main/resources/images/식단기록.png)
-
-### 챌린지 화면
-
-![챌린지](./src/main/resources/images/챌린지.png)
-
-### 커뮤니티 화면
-
-![커뮤니티](./src/main/resources/images/커뮤니티.png)
-
----
-
-## 테스트 계정
-
-```text
-이메일: demo@yumyum.com
-비밀번호: Demo1234!
-```
-
----
 
 ## 실행 화면
 
@@ -205,26 +142,21 @@ src/main/java/com/ssafy/yumyum
   <img src="./src/main/resources/images/챌린지.png" alt="챌린지 화면" width="60%">
 </p>
 
-## 클래스 다이어그램
+## 테스트 계정
 
-![](./src/main/resources/class-diagram.jpeg)
-
-## ERD 와 MySQL Workbench 파일
+```text
+이메일: demo@yumyum.com
+비밀번호: Demo1234!
+```
 
 ## 실행 방법
 
 1. MySQL에서 `ssafy_yumyumcoach` 스키마를 생성합니다.
-2. `SSAFY_COACH_Schema.sql`을 실행합니다.
-3. 필요한 음식 데이터는 `food_nutrition` 테이블에 추가합니다.
-4. `application.properties`의 DB 계정 정보를 확인합니다.
+2. `src/main/resources/SSAFY_COACH_Schema.sql`을 실행합니다.
+3. 필요하면 `src/main/resources/SSAFY_COACH_Demo_Dump.sql`로 예시 데이터를 추가합니다.
+4. `src/main/resources/application.properties`의 DB 계정 정보를 확인합니다.
 5. `YumyumApplication.java`를 실행합니다.
-6. 브라우저에서 아래 주소로 접속합니다.
-
-```text
-http://localhost:8080
-```
-
----
+6. 브라우저에서 `http://localhost:8080`으로 접속합니다.
 
 ## application.properties 주요 설정
 
@@ -246,7 +178,11 @@ server.servlet.encoding.enabled=true
 server.servlet.encoding.force=true
 ```
 
----
+## DB 관련 파일
+
+- [ssafy_yumyumcoach.mwb](./assets/ssafy_yumyumcoach.mwb)
+- [ssafy_yumyumcoach.png](./assets/ssafy_yumyumcoach.png)
+- [ssafy_yumyumcoach.sql](./assets/ssafy_yumyumcoach.sql)
 
 ## 제출 파일
 
@@ -261,13 +197,3 @@ YumYumCoach_spring_서울_8반_김동주_윤다인.zip
 bin
 target
 ```
-
----
-
-## 구현 정리
-
-이번 프로젝트에서는 기존 Servlet/JSP 프로젝트를 Spring Boot 기반으로 전환하면서 요청 처리 구조를 정리했습니다.
-
-Controller는 요청과 화면 이동을 담당하고, Service는 검증과 비즈니스 로직을 담당하며, Repository는 DB 접근을 담당하도록 역할을 나누었습니다.
-
-또한 로그인 필터와 공통 예외 처리를 추가해 중복 코드를 줄이고, 사용자 인증이 필요한 페이지를 일관되게 제어할 수 있도록 구성했습니다.
