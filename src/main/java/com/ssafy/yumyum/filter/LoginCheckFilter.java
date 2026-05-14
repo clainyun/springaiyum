@@ -1,5 +1,9 @@
 package com.ssafy.yumyum.filter;
 
+import java.io.IOException;
+
+import org.springframework.stereotype.Component;
+
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.repository.UserRepository;
 import com.ssafy.yumyum.util.SessionUtils;
@@ -11,10 +15,6 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import org.springframework.stereotype.Component;
-
-import java.io.IOException;
 
 @Component
 public class LoginCheckFilter implements Filter {
@@ -105,7 +105,8 @@ public class LoginCheckFilter implements Filter {
     }
 
     private boolean isPublicPath(String path) {
-        return path.equals("/")
+        return path.equals("")
+                || path.equals("/")
                 || path.equals("/auth/login")
                 || path.equals("/auth/signup")
                 || path.equals("/auth/logout")
