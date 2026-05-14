@@ -24,4 +24,9 @@ public class HomeController {
 
         return "home/index";
     }
+    
+    @GetMapping("/error-test")
+    public String errorTest() {
+        throw new com.ssafy.yumyum.exception.CustomException(400, "커스텀 예외 처리 테스트입니다.");
+    }
 }

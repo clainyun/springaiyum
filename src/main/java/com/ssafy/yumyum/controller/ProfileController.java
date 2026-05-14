@@ -1,81 +1,129 @@
 package com.ssafy.yumyum.controller;
 
+import com.ssafy.yumyum.exception.CustomException;
 import com.ssafy.yumyum.model.User;
-import com.ssafy.yumyum.util.AppContainer;
-import com.ssafy.yumyum.util.BaseController;
-import com.ssafy.yumyum.util.ServiceResult;
+import com.ssafy.yumyum.repository.UserRepository;
 import com.ssafy.yumyum.util.SessionUtils;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import jakarta.servlet.http.HttpSession;
 
-@WebServlet("/profile")
-public class ProfileController extends BaseController {
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        User user = requireLoginUser(req, resp);
-        if (user == null) {
-            return;
-        }
-        req.setAttribute("pageTitle", "프로필");
-        req.setAttribute("activeNav", "profile");
-        req.setAttribute("dailyGoal", AppContainer.getMealService().calculateDailyGoal(user));
-        req.setAttribute("mealCount", AppContainer.getMealService().getMealsForUser(user.getId()).size());
-        req.setAttribute("followingCount", AppContainer.getSocialService().countFollowing(user.getId()));
-        req.setAttribute("followerCount", AppContainer.getSocialService().countFollowers(user.getId()));
-        req.setAttribute("joinedChallengeCount", AppContainer.getChallengeService().countJoined(user.getId()));
-        render(req, resp, "profile/index");
+@Controller
+public class ProfileController {
+
+    private final UserRepository userRepository;
+
+    public ProfileController(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        User user = requireLoginUser(req, resp);
-        if (user == null) {
-            return;
+    @GetMapping("/profile")
+    public String profile(HttpServletRequest request, Model model) {
+        User user = getLoginUser(request);
+
+        model.addAttribute("pageTitle", "프로필");
+        model.addAttribute("activeNav", "profile");
+        model.addAttribute("currentUser", user);
+
+        return "profile/index";
+    }
+
+    @PostMapping("/profile")
+    public String updateProfile(HttpServletRequest request, Model model) {
+        User user = getLoginUser(request);
+
+        String action = request.getParameter("action");
+
+        if ("deactivate".equals(action) || "delete".equals(action)) {
+            user.setActive(false);
+            userRepository.save(user);
+
+            SessionUtils.logout(request.getSession(false));
+
+            HttpSession newSession = request.getSession(true);
+            SessionUtils.flash(newSession, "info", "계정을 비활성화했습니다.");
+
+            return "redirect:/auth/login";
         }
 
-        String action = req.getParameter("action");
-        if ("deactivate".equals(action)) {
-            AppContainer.getUserService().deactivate(user);
-            SessionUtils.logout(req.getSession(false));
-            req.getSession(true);
-            SessionUtils.flash(req.getSession(), "info", "계정을 비활성화했습니다.");
-            redirect(req, resp, "/auth/login");
-            return;
-        }
-        if ("delete".equals(action)) {
-            AppContainer.getUserService().delete(user);
-            SessionUtils.logout(req.getSession(false));
-            req.getSession(true);
-            SessionUtils.flash(req.getSession(), "info", "계정을 삭제했습니다.");
-            redirect(req, resp, "/auth/login");
-            return;
+        String email = request.getParameter("email");
+        String nickname = request.getParameter("nickname");
+        String password = request.getParameter("password");
+
+        if (email == null || !email.contains("@")) {
+            model.addAttribute("pageTitle", "프로필");
+            model.addAttribute("activeNav", "profile");
+            model.addAttribute("currentUser", user);
+            model.addAttribute("errorMessage", "올바른 이메일을 입력해 주세요.");
+            return "profile/index";
         }
 
-        ServiceResult<User> result = AppContainer.getUserService().updateProfile(
-            user,
-            req.getParameter("email"),
-            req.getParameter("nickname"),
-            req.getParameter("password"),
-            req.getParameter("gender"),
-            parseInt(req.getParameter("birthYear"), user.getBirthYear()),
-            parseDouble(req.getParameter("height"), user.getHeight()),
-            parseDouble(req.getParameter("weight"), user.getWeight()),
-            req.getParameter("goal"),
-            req.getParameter("healthNote")
-        );
-        if (!result.isOk()) {
-            req.setAttribute("errorMessage", result.getMessage());
-        } else {
-            SessionUtils.flash(req.getSession(), "success", result.getMessage());
-            redirect(req, resp, "/profile");
-            return;
+        if (nickname == null || nickname.trim().isEmpty()) {
+            model.addAttribute("pageTitle", "프로필");
+            model.addAttribute("activeNav", "profile");
+            model.addAttribute("currentUser", user);
+            model.addAttribute("errorMessage", "닉네임을 입력해 주세요.");
+            return "profile/index";
         }
-        doGet(req, resp);
+
+        String trimmedEmail = email.trim();
+
+        User duplicated = userRepository.findByEmail(trimmedEmail);
+        if (duplicated != null && !duplicated.getId().equals(user.getId())) {
+            model.addAttribute("pageTitle", "프로필");
+            model.addAttribute("activeNav", "profile");
+            model.addAttribute("currentUser", user);
+            model.addAttribute("errorMessage", "이미 사용 중인 이메일입니다.");
+            return "profile/index";
+        }
+
+        user.setEmail(trimmedEmail);
+        user.setNickname(nickname.trim());
+
+        if (password != null && !password.trim().isEmpty()) {
+            if (password.length() < 8) {
+                model.addAttribute("pageTitle", "프로필");
+                model.addAttribute("activeNav", "profile");
+                model.addAttribute("currentUser", user);
+                model.addAttribute("errorMessage", "비밀번호는 8자 이상이어야 합니다.");
+                return "profile/index";
+            }
+            user.setPassword(password);
+        }
+
+        user.setGender(request.getParameter("gender"));
+        user.setBirthYear(parseInt(request.getParameter("birthYear"), user.getBirthYear()));
+        user.setHeight(parseDouble(request.getParameter("height"), user.getHeight()));
+        user.setWeight(parseDouble(request.getParameter("weight"), user.getWeight()));
+        user.setGoal(request.getParameter("goal"));
+        user.setHealthNote(request.getParameter("healthNote") == null ? "" : request.getParameter("healthNote").trim());
+
+        userRepository.save(user);
+
+        SessionUtils.flash(request.getSession(), "success", "프로필을 수정했습니다.");
+
+        return "redirect:/profile";
+    }
+
+    private User getLoginUser(HttpServletRequest request) {
+        String loginUserId = SessionUtils.currentUserId(request);
+
+        if (loginUserId == null) {
+            throw new CustomException(401, "로그인이 필요합니다.");
+        }
+
+        User user = userRepository.findById(loginUserId);
+
+        if (user == null || !user.isActive()) {
+            throw new CustomException(401, "로그인 정보를 찾을 수 없습니다.");
+        }
+
+        return user;
     }
 
     private int parseInt(String raw, int fallback) {
