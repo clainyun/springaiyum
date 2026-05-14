@@ -23,15 +23,14 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.SessionAttribute;
 
 @Controller
 @RequestMapping("/challenges")
 public class ChallengeController {
 
-    private static final String LOGIN_REDIRECT = "redirect:/auth/login";
     private static final String CHALLENGE_INDEX_VIEW = "challenge/index";
     private static final String CHALLENGES_REDIRECT = "redirect:/challenges";
 
@@ -58,25 +57,8 @@ public class ChallengeController {
         return form;
     }
 
-    @ModelAttribute("currentUser")
-    public User currentUser(
-        @SessionAttribute(value = "loginUserId", required = false) String loginUserId,
-        HttpServletRequest req
-    ) {
-        User user = AppContainer.getUserService().findById(loginUserId);
-        if (user == null || !user.isActive()) {
-            SessionUtils.flash(req.getSession(), "warning", "로그인이 필요한 메뉴입니다.");
-            return null;
-        }
-        return user;
-    }
-
     @GetMapping
-    public String getChallenges(@ModelAttribute("currentUser") User user, Model model) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
-
+    public String getChallenges(@RequestAttribute("currentUser") User user, Model model) {
         List<Challenge> challenges = AppContainer.getChallengeService().getChallenges();
         Map<String, ChallengeMembership> membershipMap = AppContainer.getChallengeService().membershipMap(user.getId());
 
@@ -95,14 +77,10 @@ public class ChallengeController {
 
     @PostMapping
     public String createChallenge(
-        @ModelAttribute("currentUser") User user,
+        @RequestAttribute("currentUser") User user,
         @ModelAttribute("challengeForm") ChallengeForm form,
         HttpServletRequest req
     ) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
-
         ServiceResult<?> result = AppContainer.getChallengeService().createChallenge(
             user,
             form.getTitle(),
@@ -117,14 +95,10 @@ public class ChallengeController {
 
     @PostMapping("/{challengeId}/memberships")
     public String joinChallenge(
-        @ModelAttribute("currentUser") User user,
+        @RequestAttribute("currentUser") User user,
         @PathVariable String challengeId,
         HttpServletRequest req
     ) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
-
         ServiceResult<?> result = AppContainer.getChallengeService().joinChallenge(challengeId, user.getId());
         SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
         return CHALLENGES_REDIRECT;
@@ -132,15 +106,11 @@ public class ChallengeController {
 
     @PatchMapping("/{challengeId}/memberships/me")
     public String updateProgress(
-        @ModelAttribute("currentUser") User user,
+        @RequestAttribute("currentUser") User user,
         @PathVariable String challengeId,
         @RequestParam(required = false) String progress,
         HttpServletRequest req
     ) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
-
         ServiceResult<?> result = AppContainer.getChallengeService().updateProgress(
             challengeId,
             user.getId(),
@@ -152,14 +122,10 @@ public class ChallengeController {
 
     @DeleteMapping("/{challengeId}/memberships/me")
     public String leaveChallenge(
-        @ModelAttribute("currentUser") User user,
+        @RequestAttribute("currentUser") User user,
         @PathVariable String challengeId,
         HttpServletRequest req
     ) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
-
         AppContainer.getChallengeService().leaveChallenge(challengeId, user.getId());
         SessionUtils.flash(req.getSession(), "info", "챌린지에서 나갔습니다.");
         return CHALLENGES_REDIRECT;
@@ -167,14 +133,10 @@ public class ChallengeController {
 
     @DeleteMapping("/{challengeId}")
     public String deleteChallenge(
-        @ModelAttribute("currentUser") User user,
+        @RequestAttribute("currentUser") User user,
         @PathVariable String challengeId,
         HttpServletRequest req
     ) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
-
         AppContainer.getChallengeService().deleteChallenge(challengeId, user);
         SessionUtils.flash(req.getSession(), "success", "챌린지를 삭제했습니다.");
         return CHALLENGES_REDIRECT;

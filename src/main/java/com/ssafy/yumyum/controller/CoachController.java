@@ -18,20 +18,18 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.SessionAttribute;
 
 @Controller
 @RequestMapping("/coach")
 public class CoachController {
 
-    private static final String LOGIN_REDIRECT = "redirect:/auth/login";
     private static final String COACH_INDEX_VIEW = "coach/index";
 
     @ModelAttribute
@@ -49,35 +47,14 @@ public class CoachController {
         return "coach";
     }
 
-    @ModelAttribute("currentUser")
-    public User currentUser(
-        @SessionAttribute(value = "loginUserId", required = false) String loginUserId,
-        HttpServletRequest req
-    ) {
-        User user = AppContainer.getUserService().findById(loginUserId);
-        if (user == null || !user.isActive()) {
-            SessionUtils.flash(req.getSession(), "warning", "로그인이 필요한 메뉴입니다.");
-            return null;
-        }
-        return user;
-    }
-
     @GetMapping
-    public String getCoach(@ModelAttribute("currentUser") User user) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
+    public String getCoach(@RequestAttribute("currentUser") User user) {
         return COACH_INDEX_VIEW;
     }
 
     @GetMapping("/dashboard")
     @ResponseBody
-    public ResponseEntity<?> getCoachDashboard(@ModelAttribute("currentUser") User user) {
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(new ErrorResponse("AUTH_REQUIRED", "로그인이 필요한 메뉴입니다."));
-        }
-
+    public ResponseEntity<?> getCoachDashboard(@RequestAttribute("currentUser") User user) {
         List<Meal> meals = AppContainer.getMealService().getMealsForUser(user.getId(), null, null, null, "dateDesc", user);
         CoachAdvice advice = AppContainer.getCoachService().buildAdvice(user);
         DailyGoal goal = AppContainer.getMealService().calculateDailyGoal(user);
@@ -159,8 +136,5 @@ public class CoachController {
     }
 
     public record ChallengeCard(String id, String title, String description, int progress, int targetCount) {
-    }
-
-    public record ErrorResponse(String code, String message) {
     }
 }

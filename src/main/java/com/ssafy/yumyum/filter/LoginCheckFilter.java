@@ -19,6 +19,8 @@ import java.io.IOException;
 @Component
 public class LoginCheckFilter implements Filter {
 
+    private static final String LOGIN_REQUIRED_MESSAGE = "\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD55C \uBA54\uB274\uC785\uB2C8\uB2E4.";
+
     private final UserRepository userRepository;
 
     public LoginCheckFilter(UserRepository userRepository) {
@@ -39,25 +41,67 @@ public class LoginCheckFilter implements Filter {
         String contextPath = httpRequest.getContextPath();
         String path = requestURI.substring(contextPath.length());
 
-        String loginUserId = SessionUtils.currentUserId(httpRequest);
-
-        if (loginUserId != null) {
-            User currentUser = userRepository.findById(loginUserId);
-            httpRequest.setAttribute("currentUser", currentUser);
-        }
+        User currentUser = resolveCurrentUser(httpRequest);
 
         if (isPublicPath(path)) {
             chain.doFilter(request, response);
             return;
         }
 
-        if (loginUserId == null) {
-            SessionUtils.flash(httpRequest.getSession(true), "warning", "로그인이 필요합니다.");
-            httpResponse.sendRedirect(contextPath + "/auth/login");
+        if (currentUser == null) {
+            handleUnauthorized(httpRequest, httpResponse, contextPath);
             return;
         }
 
         chain.doFilter(request, response);
+    }
+
+    private User resolveCurrentUser(HttpServletRequest request) {
+        String loginUserId = SessionUtils.currentUserId(request);
+
+        if (loginUserId == null) {
+            return null;
+        }
+
+        User currentUser = userRepository.findById(loginUserId);
+        if (currentUser == null || !currentUser.isActive()) {
+            SessionUtils.logout(request.getSession(false));
+            return null;
+        }
+
+        request.setAttribute("currentUser", currentUser);
+        return currentUser;
+    }
+
+    private void handleUnauthorized(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    String contextPath) throws IOException {
+
+        if (expectsJson(request)) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json; charset=UTF-8");
+            response.getWriter()
+                .write("{\"code\":\"AUTH_REQUIRED\",\"message\":\"" + LOGIN_REQUIRED_MESSAGE + "\"}");
+            return;
+        }
+
+        SessionUtils.flash(request.getSession(true), "warning", LOGIN_REQUIRED_MESSAGE);
+        response.sendRedirect(contextPath + "/auth/login");
+    }
+
+    private boolean expectsJson(HttpServletRequest request) {
+        String accept = request.getHeader("Accept");
+        if (accept != null && accept.contains("application/json")) {
+            return true;
+        }
+
+        String requestedWith = request.getHeader("X-Requested-With");
+        if ("XMLHttpRequest".equalsIgnoreCase(requestedWith)) {
+            return true;
+        }
+
+        String contentType = request.getContentType();
+        return contentType != null && contentType.contains("application/json");
     }
 
     private boolean isPublicPath(String path) {

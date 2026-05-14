@@ -23,15 +23,14 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.SessionAttribute;
 
 @Controller
 @RequestMapping("/community")
 public class CommunityController {
 
-    private static final String LOGIN_REDIRECT = "redirect:/auth/login";
     private static final String COMMUNITY_REDIRECT = "redirect:/community";
     private static final String COMMUNITY_INDEX_VIEW = "community/index";
 
@@ -50,48 +49,23 @@ public class CommunityController {
         return "community";
     }
 
-    @ModelAttribute("currentUser")
-    public User currentUser(
-        @SessionAttribute(value = "loginUserId", required = false) String loginUserId,
-        HttpServletRequest req
-    ) {
-        if (loginUserId == null) {
-            SessionUtils.flash(req.getSession(), "warning", "로그인이 필요한 메뉴입니다.");
-            return null;
-        }
-
-        User user = AppContainer.getUserService().findById(loginUserId);
-        if (user == null || !user.isActive()) {
-            SessionUtils.flash(req.getSession(), "warning", "로그인이 필요한 메뉴입니다.");
-            return null;
-        }
-        return user;
-    }
-
     @GetMapping
     public String getCommunity(
-        @ModelAttribute("currentUser") User user,
+        @RequestAttribute("currentUser") User user,
         @RequestParam(required = false) String category,
         Model model
     ) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
         return renderCommunityPage(user, resolveSelectedCategory(category, null), null, null, model);
     }
 
     @GetMapping("/posts/{postId}/edit")
     public String editPost(
-        @ModelAttribute("currentUser") User user,
+        @RequestAttribute("currentUser") User user,
         @PathVariable String postId,
         @RequestParam(required = false) String category,
         HttpServletRequest req,
         Model model
     ) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
-
         CommunityPost post = AppContainer.getCommunityService().findPost(postId);
         if (post == null) {
             SessionUtils.flash(req.getSession(), "warning", "수정할 게시글이 없습니다.");
@@ -106,16 +80,12 @@ public class CommunityController {
 
     @GetMapping("/comments/{commentId}/edit")
     public String editComment(
-        @ModelAttribute("currentUser") User user,
+        @RequestAttribute("currentUser") User user,
         @PathVariable String commentId,
         @RequestParam(required = false) String category,
         HttpServletRequest req,
         Model model
     ) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
-
         CommunityComment comment = AppContainer.getCommunityService().findComment(commentId);
         if (comment == null) {
             SessionUtils.flash(req.getSession(), "warning", "수정할 댓글이 없습니다.");
@@ -130,17 +100,13 @@ public class CommunityController {
 
     @PostMapping("/posts")
     public String createPost(
-        @ModelAttribute("currentUser") User user,
+        @RequestAttribute("currentUser") User user,
         @RequestParam(required = false) String category,
         @RequestParam(required = false) String linkedMealId,
         @RequestParam(required = false) String title,
         @RequestParam(required = false) String content,
         HttpServletRequest req
     ) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
-
         ServiceResult<?> result = AppContainer.getCommunityService().createPost(user, category, linkedMealId, title, content);
         SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
         return redirectToCommunity(resolveSelectedCategory(category, null));
@@ -148,7 +114,7 @@ public class CommunityController {
 
     @PatchMapping("/posts/{postId}")
     public String updatePost(
-        @ModelAttribute("currentUser") User user,
+        @RequestAttribute("currentUser") User user,
         @PathVariable String postId,
         @RequestParam(required = false) String category,
         @RequestParam(required = false) String linkedMealId,
@@ -156,10 +122,6 @@ public class CommunityController {
         @RequestParam(required = false) String content,
         HttpServletRequest req
     ) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
-
         ServiceResult<?> result = AppContainer.getCommunityService().updatePost(user, postId, category, linkedMealId, title, content);
         SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
         return redirectToCommunity(resolveSelectedCategory(category, categoryForPostId(postId)));
@@ -167,15 +129,11 @@ public class CommunityController {
 
     @DeleteMapping("/posts/{postId}")
     public String deletePost(
-        @ModelAttribute("currentUser") User user,
+        @RequestAttribute("currentUser") User user,
         @PathVariable String postId,
         @RequestParam(required = false) String redirectCategory,
         HttpServletRequest req
     ) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
-
         String fallbackCategory = categoryForPostId(postId);
         AppContainer.getCommunityService().deletePost(user, postId);
         SessionUtils.flash(req.getSession(), "success", "게시글을 삭제했습니다.");
@@ -184,16 +142,12 @@ public class CommunityController {
 
     @PostMapping("/posts/{postId}/comments")
     public String createComment(
-        @ModelAttribute("currentUser") User user,
+        @RequestAttribute("currentUser") User user,
         @PathVariable String postId,
         @RequestParam(required = false) String commentContent,
         @RequestParam(required = false) String redirectCategory,
         HttpServletRequest req
     ) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
-
         ServiceResult<?> result = AppContainer.getCommunityService().addComment(user, postId, commentContent);
         SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
         return redirectToCommunity(resolveSelectedCategory(redirectCategory, categoryForPostId(postId)));
@@ -201,16 +155,12 @@ public class CommunityController {
 
     @PatchMapping("/comments/{commentId}")
     public String updateComment(
-        @ModelAttribute("currentUser") User user,
+        @RequestAttribute("currentUser") User user,
         @PathVariable String commentId,
         @RequestParam(required = false) String commentContent,
         @RequestParam(required = false) String redirectCategory,
         HttpServletRequest req
     ) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
-
         String fallbackCategory = categoryForCommentId(commentId);
         ServiceResult<?> result = AppContainer.getCommunityService().updateComment(user, commentId, commentContent);
         SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
@@ -219,15 +169,11 @@ public class CommunityController {
 
     @DeleteMapping("/comments/{commentId}")
     public String deleteComment(
-        @ModelAttribute("currentUser") User user,
+        @RequestAttribute("currentUser") User user,
         @PathVariable String commentId,
         @RequestParam(required = false) String redirectCategory,
         HttpServletRequest req
     ) {
-        if (user == null) {
-            return LOGIN_REDIRECT;
-        }
-
         String fallbackCategory = categoryForCommentId(commentId);
         AppContainer.getCommunityService().deleteComment(user, commentId);
         SessionUtils.flash(req.getSession(), "info", "댓글을 삭제했습니다.");
