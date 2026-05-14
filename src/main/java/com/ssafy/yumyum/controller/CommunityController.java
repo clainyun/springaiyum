@@ -2,12 +2,16 @@ package com.ssafy.yumyum.controller;
 
 import com.ssafy.yumyum.model.CommunityComment;
 import com.ssafy.yumyum.model.CommunityPost;
+import com.ssafy.yumyum.model.Meal;
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.util.AppContainer;
 import com.ssafy.yumyum.util.ServiceResult;
 import com.ssafy.yumyum.util.SessionUtils;
+import com.ssafy.yumyum.util.ViewHelper;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -75,11 +79,18 @@ public class CommunityController {
 
         List<CommunityPost> posts = AppContainer.getCommunityService().getPosts(category);
         Map<String, List<CommunityComment>> commentMap = AppContainer.getCommunityService().commentMap(posts);
+        List<Meal> meals = AppContainer.getCommunityService().mealsForUser(user.getId());
+        Map<String, User> authorMap = AppContainer.getCommunityService().authorMap(posts, commentMap);
 
         model.addAttribute("posts", posts);
         model.addAttribute("commentMap", commentMap);
-        model.addAttribute("authorMap", AppContainer.getCommunityService().authorMap(posts, commentMap));
-        model.addAttribute("meals", AppContainer.getCommunityService().mealsForUser(user.getId()));
+        model.addAttribute("authorMap", authorMap);
+        model.addAttribute("authorNameMap", authorNameMap(authorMap));
+        model.addAttribute("meals", meals);
+        model.addAttribute("categoryLabelMap", categoryLabelMap());
+        model.addAttribute("mealLabelMap", mealLabelMap(meals));
+        model.addAttribute("postCreatedAtMap", postCreatedAtMap(posts));
+        model.addAttribute("commentCreatedAtMap", commentCreatedAtMap(commentMap));
         model.addAttribute("selectedCategory", category == null || category.isEmpty() ? "all" : category);
         model.addAttribute("editPost", AppContainer.getCommunityService().findPost(editPostId));
         model.addAttribute("editComment", AppContainer.getCommunityService().findComment(editCommentId));
@@ -140,5 +151,51 @@ public class CommunityController {
             SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
         }
         return COMMUNITY_REDIRECT;
+    }
+
+    private Map<String, String> categoryLabelMap() {
+        Map<String, String> result = new LinkedHashMap<>();
+        result.put("review", ViewHelper.postCategoryLabel("review"));
+        result.put("expert", ViewHelper.postCategoryLabel("expert"));
+        result.put("free", ViewHelper.postCategoryLabel("free"));
+        return result;
+    }
+
+    private Map<String, String> mealLabelMap(List<Meal> meals) {
+        Map<String, String> result = new HashMap<>();
+        for (Meal meal : meals) {
+            result.put(
+                meal.getId(),
+                ViewHelper.formatDate(meal.getMealDate()) + " | " + ViewHelper.mealTypeLabel(meal.getMealType())
+            );
+        }
+        return result;
+    }
+
+    private Map<String, String> postCreatedAtMap(List<CommunityPost> posts) {
+        Map<String, String> result = new HashMap<>();
+        for (CommunityPost post : posts) {
+            result.put(post.getId(), ViewHelper.formatDateTime(post.getCreatedAt()));
+        }
+        return result;
+    }
+
+    private Map<String, String> commentCreatedAtMap(Map<String, List<CommunityComment>> commentMap) {
+        Map<String, String> result = new HashMap<>();
+        for (List<CommunityComment> comments : commentMap.values()) {
+            for (CommunityComment comment : comments) {
+                result.put(comment.getId(), ViewHelper.formatDateTime(comment.getCreatedAt()));
+            }
+        }
+        return result;
+    }
+
+    private Map<String, String> authorNameMap(Map<String, User> authorMap) {
+        Map<String, String> result = new HashMap<>();
+        for (Map.Entry<String, User> entry : authorMap.entrySet()) {
+            User author = entry.getValue();
+            result.put(entry.getKey(), author == null ? "알 수 없음" : author.getNickname());
+        }
+        return result;
     }
 }
