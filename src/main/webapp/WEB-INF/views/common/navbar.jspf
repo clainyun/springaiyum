@@ -6,38 +6,75 @@ if (activeNav == null) {
     activeNav = "";
 }
 %>
+
 <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
   <div class="container">
     <a class="navbar-brand fw-bold" href="<%= request.getContextPath() %>/home">
-      <i class="bi bi-egg-fried me-2"></i>냠냠 MVC
+      <i class="bi bi-egg-fried me-2"></i>YumYum MVC
     </a>
+
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#appNavMenu">
       <span class="navbar-toggler-icon"></span>
     </button>
+
     <div class="collapse navbar-collapse" id="appNavMenu">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <% if (navUser != null) { %>
-        <li class="nav-item"><a class="nav-link <%= "home".equals(activeNav) ? "active fw-semibold" : "" %>" href="<%= request.getContextPath() %>/home">대시보드</a></li>
-        <li class="nav-item"><a class="nav-link <%= "diet".equals(activeNav) ? "active fw-semibold" : "" %>" href="<%= request.getContextPath() %>/meals">식단</a></li>
-        <li class="nav-item"><a class="nav-link <%= "coach".equals(activeNav) ? "active fw-semibold" : "" %>" href="<%= request.getContextPath() %>/coach">AI 코치</a></li>
-        <li class="nav-item"><a class="nav-link <%= "community".equals(activeNav) ? "active fw-semibold" : "" %>" href="<%= request.getContextPath() %>/community">커뮤니티</a></li>
-        <li class="nav-item"><a class="nav-link <%= "challenge".equals(activeNav) ? "active fw-semibold" : "" %>" href="<%= request.getContextPath() %>/challenges">챌린지</a></li>
-        <li class="nav-item"><a class="nav-link <%= "social".equals(activeNav) ? "active fw-semibold" : "" %>" href="<%= request.getContextPath() %>/social">소셜</a></li>
+        <li class="nav-item">
+          <a class="nav-link <%= "home".equals(activeNav) ? "active fw-semibold" : "" %>"
+             href="<%= request.getContextPath() %>/home">&#45824;&#49884;&#48372;&#46300;</a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link <%= "diet".equals(activeNav) ? "active fw-semibold" : "" %>"
+             href="<%= request.getContextPath() %>/meals">&#49885;&#45800;</a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link <%= "coach".equals(activeNav) ? "active fw-semibold" : "" %>"
+             href="<%= request.getContextPath() %>/coach">AI &#53076;&#52824;</a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link <%= "community".equals(activeNav) ? "active fw-semibold" : "" %>"
+             href="<%= request.getContextPath() %>/community">&#52964;&#48036;&#45768;&#54000;</a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link <%= "challenge".equals(activeNav) ? "active fw-semibold" : "" %>"
+             href="<%= request.getContextPath() %>/challenges">&#52300;&#47536;&#51648;</a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link <%= "social".equals(activeNav) ? "active fw-semibold" : "" %>"
+             href="<%= request.getContextPath() %>/social">&#49548;&#49500;</a>
+        </li>
         <% } %>
       </ul>
+
       <ul class="navbar-nav align-items-lg-center">
         <% if (navUser != null) { %>
         <li class="nav-item me-lg-2">
-          <a class="nav-link <%= "profile".equals(activeNav) ? "active fw-semibold" : "" %>" href="<%= request.getContextPath() %>/profile">
+          <a class="nav-link <%= "profile".equals(activeNav) ? "active fw-semibold" : "" %>"
+             href="<%= request.getContextPath() %>/profile">
             <i class="bi bi-person-circle me-1"></i><%= navUser.getNickname() %>
           </a>
         </li>
+
         <li class="nav-item">
-          <a class="btn btn-outline-light btn-sm" href="<%= request.getContextPath() %>/auth/logout">로그아웃</a>
+          <a class="btn btn-outline-light btn-sm"
+             href="<%= request.getContextPath() %>/auth/logout">&#47196;&#44536;&#50500;&#50883;</a>
         </li>
         <% } else { %>
-        <li class="nav-item me-lg-2"><a class="nav-link <%= "login".equals(activeNav) ? "active fw-semibold" : "" %>" href="<%= request.getContextPath() %>/auth/login">로그인</a></li>
-        <li class="nav-item"><a class="btn btn-outline-light btn-sm" href="<%= request.getContextPath() %>/auth/signup">회원가입</a></li>
+        <li class="nav-item me-lg-2">
+          <a class="nav-link <%= "login".equals(activeNav) ? "active fw-semibold" : "" %>"
+             href="<%= request.getContextPath() %>/auth/login">&#47196;&#44536;&#51064;</a>
+        </li>
+
+        <li class="nav-item">
+          <a class="btn btn-outline-light btn-sm"
+             href="<%= request.getContextPath() %>/auth/signup">&#54924;&#50896;&#44032;&#51077;</a>
+        </li>
         <% } %>
       </ul>
     </div>

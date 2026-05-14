@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.repository.UserRepository;
+import com.ssafy.yumyum.util.IdGenerator;
 import com.ssafy.yumyum.util.ServiceResult;
 
 @Service
@@ -56,6 +57,7 @@ public class AuthService {
         }
 
         User user = new User();
+        user.setId(IdGenerator.next("USER"));
         user.setEmail(trimmedEmail);
         user.setPassword(password);
         user.setNickname(nickname.trim());

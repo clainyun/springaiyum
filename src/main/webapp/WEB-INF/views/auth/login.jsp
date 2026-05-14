@@ -11,7 +11,7 @@ if (emailValue == null) {
 <main class="auth-layout">
   <div class="auth-shell">
     <section class="auth-brand-panel">
-      <h1>YamYam MVC</h1>
+      <h1>YumYum MVC</h1>
       <p class="summary mt-3">정적 프론트 프로젝트를 JSP와 Servlet MVC 구조로 전환한 버전입니다.</p>
       <div class="mt-4">
         <div class="pill mb-2"><i class="bi bi-diagram-3"></i>Controller - Service - Repository</div>
@@ -20,7 +20,7 @@ if (emailValue == null) {
     </section>
     <section class="auth-form-panel">
       <h2 class="fw-bold mb-3">로그인</h2>
-      <p class="subtle-text">데모 계정으로 바로 확인할 수 있습니다. `demo@yamyam.com / Demo1234!`</p>
+      <p class="subtle-text">데모 계정으로 바로 확인할 수 있습니다. `demo@yumyum.com / Demo1234!`</p>
       <form method="post" action="<%= request.getContextPath() %>/auth/login" class="mt-4">
         <div class="mb-3">
           <label class="form-label fw-semibold" for="email">이메일</label>

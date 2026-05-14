@@ -1,93 +1,122 @@
 package com.ssafy.yumyum.controller;
 
 import com.ssafy.yumyum.model.User;
-import com.ssafy.yumyum.util.AppContainer;
-import com.ssafy.yumyum.util.BaseController;
+import com.ssafy.yumyum.service.AuthService;
 import com.ssafy.yumyum.util.ServiceResult;
 import com.ssafy.yumyum.util.SessionUtils;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import jakarta.servlet.http.HttpSession;
 
-@WebServlet(urlPatterns = {"/auth/login", "/auth/signup", "/auth/logout"})
-public class AuthController extends BaseController {
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String servletPath = req.getServletPath();
-        if ("/auth/logout".equals(servletPath)) {
-            SessionUtils.logout(req.getSession(false));
-            req.getSession(true);
-            SessionUtils.flash(req.getSession(), "success", "로그아웃되었습니다.");
-            redirect(req, resp, "/auth/login");
-            return;
-        }
-        if (SessionUtils.currentUserId(req) != null) {
-            redirect(req, resp, "/home");
-            return;
-        }
-        req.setAttribute("pageTitle", "/auth/login".equals(servletPath) ? "로그인" : "회원가입");
-        req.setAttribute("activeNav", servletPath.endsWith("login") ? "login" : "signup");
-        render(req, resp, "/auth/login".equals(servletPath) ? "auth/login" : "auth/signup");
+@Controller
+@RequestMapping("/auth")
+public class AuthController {
+
+    private final AuthService authService;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
     }
 
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String servletPath = req.getServletPath();
-        if ("/auth/login".equals(servletPath)) {
-            handleLogin(req, resp);
-            return;
+    @GetMapping("/login")
+    public String loginForm(HttpServletRequest request, Model model) {
+        if (SessionUtils.currentUserId(request) != null) {
+            return "redirect:/home";
         }
-        handleSignup(req, resp);
+
+        model.addAttribute("pageTitle", "로그인");
+        model.addAttribute("activeNav", "login");
+
+        return "auth/login";
     }
 
-    private void handleLogin(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        ServiceResult<User> result = AppContainer.getAuthService().login(req.getParameter("email"), req.getParameter("password"));
+    @PostMapping("/login")
+    public String login(@RequestParam String email,
+                        @RequestParam String password,
+                        HttpServletRequest request,
+                        Model model) {
+
+        ServiceResult<User> result = authService.login(email, password);
+
         if (!result.isOk()) {
-            req.setAttribute("pageTitle", "로그인");
-            req.setAttribute("activeNav", "login");
-            req.setAttribute("errorMessage", result.getMessage());
-            req.setAttribute("email", req.getParameter("email"));
-            render(req, resp, "auth/login");
-            return;
+            model.addAttribute("pageTitle", "로그인");
+            model.addAttribute("activeNav", "login");
+            model.addAttribute("errorMessage", result.getMessage());
+            model.addAttribute("email", email);
+
+            return "auth/login";
         }
-        SessionUtils.login(req.getSession(), result.getData().getId());
-        SessionUtils.flash(req.getSession(), "success", "환영합니다, " + result.getData().getNickname() + "님.");
-        redirect(req, resp, "/home");
+
+        SessionUtils.login(request.getSession(), result.getData().getId());
+        SessionUtils.flash(
+                request.getSession(),
+                "success",
+                "환영합니다, " + result.getData().getNickname() + "님."
+        );
+
+        return "redirect:/home";
     }
 
-    private void handleSignup(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        int birthYear = parseInt(req.getParameter("birthYear"), 1998);
-        double height = parseDouble(req.getParameter("height"), 165);
-        double weight = parseDouble(req.getParameter("weight"), 60);
+    @GetMapping("/signup")
+    public String signupForm(HttpServletRequest request, Model model) {
+        if (SessionUtils.currentUserId(request) != null) {
+            return "redirect:/home";
+        }
 
-        ServiceResult<User> result = AppContainer.getAuthService().register(
-            req.getParameter("email"),
-            req.getParameter("password"),
-            req.getParameter("nickname"),
-            req.getParameter("gender"),
-            birthYear,
-            height,
-            weight,
-            req.getParameter("goal"),
-            req.getParameter("healthNote")
+        model.addAttribute("pageTitle", "회원가입");
+        model.addAttribute("activeNav", "signup");
+
+        return "auth/signup";
+    }
+
+    @PostMapping("/signup")
+    public String signup(HttpServletRequest request, Model model) {
+        int birthYear = parseInt(request.getParameter("birthYear"), 1998);
+        double height = parseDouble(request.getParameter("height"), 165);
+        double weight = parseDouble(request.getParameter("weight"), 60);
+
+        ServiceResult<User> result = authService.register(
+                request.getParameter("email"),
+                request.getParameter("password"),
+                request.getParameter("nickname"),
+                request.getParameter("gender"),
+                birthYear,
+                height,
+                weight,
+                request.getParameter("goal"),
+                request.getParameter("healthNote")
         );
 
         if (!result.isOk()) {
-            req.setAttribute("pageTitle", "회원가입");
-            req.setAttribute("activeNav", "signup");
-            req.setAttribute("errorMessage", result.getMessage());
-            req.setAttribute("form", req.getParameterMap());
-            render(req, resp, "auth/signup");
-            return;
+            model.addAttribute("pageTitle", "회원가입");
+            model.addAttribute("activeNav", "signup");
+            model.addAttribute("errorMessage", result.getMessage());
+            model.addAttribute("form", request.getParameterMap());
+
+            return "auth/signup";
         }
 
-        SessionUtils.login(req.getSession(), result.getData().getId());
-        SessionUtils.flash(req.getSession(), "success", "회원가입이 완료되었습니다.");
-        redirect(req, resp, "/home");
+        SessionUtils.login(request.getSession(), result.getData().getId());
+        SessionUtils.flash(request.getSession(), "success", "회원가입이 완료되었습니다.");
+
+        return "redirect:/home";
+    }
+
+    @GetMapping("/logout")
+    public String logout(HttpServletRequest request) {
+        SessionUtils.logout(request.getSession(false));
+
+        HttpSession session = request.getSession(true);
+        SessionUtils.flash(session, "success", "로그아웃되었습니다.");
+
+        return "redirect:/auth/login";
     }
 
     private int parseInt(String raw, int fallback) {
