@@ -20,6 +20,7 @@
 - JSP
 - JDBC
 - MySQL Workbench
+  `dbyum` 산출물을 기준으로, DB 연동 구조를 유지하면서 화면 흐름과 서버 구조를 Spring MVC 방식에 맞게 정리했습니다.
 
 ---
 
@@ -30,6 +31,11 @@
 - 일부 기능은 메모리 또는 직접 생성된 Repository 객체에 의존했습니다.
 - 로그인 여부 확인 로직이 각 Controller에 흩어져 있었습니다.
 - 오류 발생 시 공통 예외 처리 흐름이 부족했습니다.
+- 기능별 요청 처리가 서블릿과 액션 파라미터 중심으로 분산되어 있었습니다.
+- 로그인 확인과 세션 검증 로직이 여러 컨트롤러에 중복되어 있었습니다.
+- 예외 상황을 공통으로 처리하는 핸들러와 에러 화면 구성이 부족했습니다.
+- JSP에 스크립틀릿과 직접 URL 조합이 많아 화면 유지보수가 번거로웠습니다.
+- 의존성 연결과 화면 흐름이 수동 구성 위주라 확장 포인트가 제한적이었습니다.
 
 ---
 
@@ -42,6 +48,12 @@
 - `CustomException`, `GlobalExceptionHandler`를 통해 공통 예외 화면을 제공했습니다.
 - 회원, 프로필, 식단 기능은 Spring MVC 방식으로 전환했습니다.
 - 식단 데이터는 `meals`, `meal_foods`, `food_nutrition` 테이블과 연동했습니다.
+- 주요 화면과 기능을 Spring MVC 컨트롤러 및 RESTful 경로 중심으로 재구성했습니다.
+- `LoginCheckFilter`, `SessionUtils`로 인증, 세션, 플래시 메시지 처리를 공통화했습니다.
+- `CustomException`, `GlobalExceptionHandler`, 에러 페이지를 추가해 예외 응답 흐름을 정리했습니다.
+- 커뮤니티, 챌린지, 코치 화면 JSP를 JSTL/EL 기반으로 정리하고 URL 매핑을 단순화했습니다.
+- `AppContainer` 수동 의존성 연결을 줄이고 Repository, Service를 스프링 빈 중심으로 전환했습니다.
+- 실행 화면, 클래스 다이어그램, ERD를 `resources`에 정리해 문서화를 보완했습니다.
 
 ---
 
