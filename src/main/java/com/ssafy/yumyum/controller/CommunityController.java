@@ -17,8 +17,11 @@ import java.util.Map;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -69,88 +72,226 @@ public class CommunityController {
     public String getCommunity(
         @ModelAttribute("currentUser") User user,
         @RequestParam(required = false) String category,
-        @RequestParam(required = false) String editPostId,
-        @RequestParam(required = false) String editCommentId,
+        Model model
+    ) {
+        if (user == null) {
+            return LOGIN_REDIRECT;
+        }
+        return renderCommunityPage(user, resolveSelectedCategory(category, null), null, null, model);
+    }
+
+    @GetMapping("/posts/{postId}/edit")
+    public String editPost(
+        @ModelAttribute("currentUser") User user,
+        @PathVariable String postId,
+        @RequestParam(required = false) String category,
+        HttpServletRequest req,
         Model model
     ) {
         if (user == null) {
             return LOGIN_REDIRECT;
         }
 
-        List<CommunityPost> posts = AppContainer.getCommunityService().getPosts(category);
-        Map<String, List<CommunityComment>> commentMap = AppContainer.getCommunityService().commentMap(posts);
-        List<Meal> meals = AppContainer.getCommunityService().mealsForUser(user.getId());
-        Map<String, User> authorMap = AppContainer.getCommunityService().authorMap(posts, commentMap);
-
-        model.addAttribute("posts", posts);
-        model.addAttribute("commentMap", commentMap);
-        model.addAttribute("authorMap", authorMap);
-        model.addAttribute("authorNameMap", authorNameMap(authorMap));
-        model.addAttribute("meals", meals);
-        model.addAttribute("categoryLabelMap", categoryLabelMap());
-        model.addAttribute("mealLabelMap", mealLabelMap(meals));
-        model.addAttribute("postCreatedAtMap", postCreatedAtMap(posts));
-        model.addAttribute("commentCreatedAtMap", commentCreatedAtMap(commentMap));
-        model.addAttribute("selectedCategory", category == null || category.isEmpty() ? "all" : category);
-        model.addAttribute("editPost", AppContainer.getCommunityService().findPost(editPostId));
-        model.addAttribute("editComment", AppContainer.getCommunityService().findComment(editCommentId));
-        return COMMUNITY_INDEX_VIEW;
+        CommunityPost post = AppContainer.getCommunityService().findPost(postId);
+        if (post == null) {
+            SessionUtils.flash(req.getSession(), "warning", "수정할 게시글이 없습니다.");
+            return redirectToCommunity(resolveSelectedCategory(category, null));
+        }
+        if (!user.getId().equals(post.getUserId())) {
+            SessionUtils.flash(req.getSession(), "warning", "본인 게시글만 수정할 수 있습니다.");
+            return redirectToCommunity(resolveSelectedCategory(category, post.getCategory()));
+        }
+        return renderCommunityPage(user, resolveSelectedCategory(category, post.getCategory()), post, null, model);
     }
 
-    @PostMapping
-    public String handleCommunityAction(
+    @GetMapping("/comments/{commentId}/edit")
+    public String editComment(
         @ModelAttribute("currentUser") User user,
-        @RequestParam(required = false) String action,
+        @PathVariable String commentId,
+        @RequestParam(required = false) String category,
+        HttpServletRequest req,
+        Model model
+    ) {
+        if (user == null) {
+            return LOGIN_REDIRECT;
+        }
+
+        CommunityComment comment = AppContainer.getCommunityService().findComment(commentId);
+        if (comment == null) {
+            SessionUtils.flash(req.getSession(), "warning", "수정할 댓글이 없습니다.");
+            return redirectToCommunity(resolveSelectedCategory(category, null));
+        }
+        if (!user.getId().equals(comment.getUserId())) {
+            SessionUtils.flash(req.getSession(), "warning", "본인 댓글만 수정할 수 있습니다.");
+            return redirectToCommunity(resolveSelectedCategory(category, categoryForComment(comment)));
+        }
+        return renderCommunityPage(user, resolveSelectedCategory(category, categoryForComment(comment)), null, comment, model);
+    }
+
+    @PostMapping("/posts")
+    public String createPost(
+        @ModelAttribute("currentUser") User user,
+        @RequestParam(required = false) String category,
+        @RequestParam(required = false) String linkedMealId,
+        @RequestParam(required = false) String title,
+        @RequestParam(required = false) String content,
         HttpServletRequest req
     ) {
         if (user == null) {
             return LOGIN_REDIRECT;
         }
 
-        ServiceResult<?> result = null;
-        if ("createPost".equals(action)) {
-            result = AppContainer.getCommunityService().createPost(
-                user,
-                req.getParameter("category"),
-                req.getParameter("linkedMealId"),
-                req.getParameter("title"),
-                req.getParameter("content")
-            );
-        } else if ("updatePost".equals(action)) {
-            result = AppContainer.getCommunityService().updatePost(
-                user,
-                req.getParameter("postId"),
-                req.getParameter("category"),
-                req.getParameter("linkedMealId"),
-                req.getParameter("title"),
-                req.getParameter("content")
-            );
-        } else if ("deletePost".equals(action)) {
-            AppContainer.getCommunityService().deletePost(user, req.getParameter("postId"));
-            SessionUtils.flash(req.getSession(), "success", "게시글을 삭제했습니다.");
-            return COMMUNITY_REDIRECT;
-        } else if ("createComment".equals(action)) {
-            result = AppContainer.getCommunityService().addComment(
-                user,
-                req.getParameter("postId"),
-                req.getParameter("commentContent")
-            );
-        } else if ("updateComment".equals(action)) {
-            result = AppContainer.getCommunityService().updateComment(
-                user,
-                req.getParameter("commentId"),
-                req.getParameter("commentContent")
-            );
-        } else if ("deleteComment".equals(action)) {
-            AppContainer.getCommunityService().deleteComment(user, req.getParameter("commentId"));
-            SessionUtils.flash(req.getSession(), "info", "댓글을 삭제했습니다.");
-            return COMMUNITY_REDIRECT;
+        ServiceResult<?> result = AppContainer.getCommunityService().createPost(user, category, linkedMealId, title, content);
+        SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
+        return redirectToCommunity(resolveSelectedCategory(category, null));
+    }
+
+    @PatchMapping("/posts/{postId}")
+    public String updatePost(
+        @ModelAttribute("currentUser") User user,
+        @PathVariable String postId,
+        @RequestParam(required = false) String category,
+        @RequestParam(required = false) String linkedMealId,
+        @RequestParam(required = false) String title,
+        @RequestParam(required = false) String content,
+        HttpServletRequest req
+    ) {
+        if (user == null) {
+            return LOGIN_REDIRECT;
         }
 
-        if (result != null) {
-            SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
+        ServiceResult<?> result = AppContainer.getCommunityService().updatePost(user, postId, category, linkedMealId, title, content);
+        SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
+        return redirectToCommunity(resolveSelectedCategory(category, categoryForPostId(postId)));
+    }
+
+    @DeleteMapping("/posts/{postId}")
+    public String deletePost(
+        @ModelAttribute("currentUser") User user,
+        @PathVariable String postId,
+        @RequestParam(required = false) String redirectCategory,
+        HttpServletRequest req
+    ) {
+        if (user == null) {
+            return LOGIN_REDIRECT;
         }
-        return COMMUNITY_REDIRECT;
+
+        String fallbackCategory = categoryForPostId(postId);
+        AppContainer.getCommunityService().deletePost(user, postId);
+        SessionUtils.flash(req.getSession(), "success", "게시글을 삭제했습니다.");
+        return redirectToCommunity(resolveSelectedCategory(redirectCategory, fallbackCategory));
+    }
+
+    @PostMapping("/posts/{postId}/comments")
+    public String createComment(
+        @ModelAttribute("currentUser") User user,
+        @PathVariable String postId,
+        @RequestParam(required = false) String commentContent,
+        @RequestParam(required = false) String redirectCategory,
+        HttpServletRequest req
+    ) {
+        if (user == null) {
+            return LOGIN_REDIRECT;
+        }
+
+        ServiceResult<?> result = AppContainer.getCommunityService().addComment(user, postId, commentContent);
+        SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
+        return redirectToCommunity(resolveSelectedCategory(redirectCategory, categoryForPostId(postId)));
+    }
+
+    @PatchMapping("/comments/{commentId}")
+    public String updateComment(
+        @ModelAttribute("currentUser") User user,
+        @PathVariable String commentId,
+        @RequestParam(required = false) String commentContent,
+        @RequestParam(required = false) String redirectCategory,
+        HttpServletRequest req
+    ) {
+        if (user == null) {
+            return LOGIN_REDIRECT;
+        }
+
+        String fallbackCategory = categoryForCommentId(commentId);
+        ServiceResult<?> result = AppContainer.getCommunityService().updateComment(user, commentId, commentContent);
+        SessionUtils.flash(req.getSession(), result.isOk() ? "success" : "warning", result.getMessage());
+        return redirectToCommunity(resolveSelectedCategory(redirectCategory, fallbackCategory));
+    }
+
+    @DeleteMapping("/comments/{commentId}")
+    public String deleteComment(
+        @ModelAttribute("currentUser") User user,
+        @PathVariable String commentId,
+        @RequestParam(required = false) String redirectCategory,
+        HttpServletRequest req
+    ) {
+        if (user == null) {
+            return LOGIN_REDIRECT;
+        }
+
+        String fallbackCategory = categoryForCommentId(commentId);
+        AppContainer.getCommunityService().deleteComment(user, commentId);
+        SessionUtils.flash(req.getSession(), "info", "댓글을 삭제했습니다.");
+        return redirectToCommunity(resolveSelectedCategory(redirectCategory, fallbackCategory));
+    }
+
+    private String renderCommunityPage(
+        User user,
+        String selectedCategory,
+        CommunityPost editPost,
+        CommunityComment editComment,
+        Model model
+    ) {
+        List<CommunityPost> posts = AppContainer.getCommunityService().getPosts(selectedCategory);
+        Map<String, List<CommunityComment>> commentMap = AppContainer.getCommunityService().commentMap(posts);
+        List<Meal> meals = AppContainer.getCommunityService().mealsForUser(user.getId());
+        Map<String, User> authorMap = AppContainer.getCommunityService().authorMap(posts, commentMap);
+
+        model.addAttribute("posts", posts);
+        model.addAttribute("commentMap", commentMap);
+        model.addAttribute("authorNameMap", authorNameMap(authorMap));
+        model.addAttribute("meals", meals);
+        model.addAttribute("categoryLabelMap", categoryLabelMap());
+        model.addAttribute("mealLabelMap", mealLabelMap(meals));
+        model.addAttribute("postCreatedAtMap", postCreatedAtMap(posts));
+        model.addAttribute("commentCreatedAtMap", commentCreatedAtMap(commentMap));
+        model.addAttribute("selectedCategory", selectedCategory);
+        model.addAttribute("editPost", editPost);
+        model.addAttribute("editComment", editComment);
+        return COMMUNITY_INDEX_VIEW;
+    }
+
+    private String redirectToCommunity(String category) {
+        if (category == null || category.isBlank() || "all".equals(category)) {
+            return COMMUNITY_REDIRECT;
+        }
+        return COMMUNITY_REDIRECT + "?category=" + category;
+    }
+
+    private String resolveSelectedCategory(String requestedCategory, String fallbackCategory) {
+        if (requestedCategory != null && !requestedCategory.isBlank()) {
+            return requestedCategory;
+        }
+        if (fallbackCategory != null && !fallbackCategory.isBlank()) {
+            return fallbackCategory;
+        }
+        return "all";
+    }
+
+    private String categoryForPostId(String postId) {
+        CommunityPost post = AppContainer.getCommunityService().findPost(postId);
+        return post == null ? null : post.getCategory();
+    }
+
+    private String categoryForCommentId(String commentId) {
+        CommunityComment comment = AppContainer.getCommunityService().findComment(commentId);
+        return categoryForComment(comment);
+    }
+
+    private String categoryForComment(CommunityComment comment) {
+        if (comment == null) {
+            return null;
+        }
+        return categoryForPostId(comment.getPostId());
     }
 
     private Map<String, String> categoryLabelMap() {

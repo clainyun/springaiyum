@@ -5,13 +5,27 @@
 <%@ include file="../common/navbar.jspf" %>
 <%@ include file="../common/flash.jspf" %>
 <c:url var="communityUrl" value="/community" />
+<c:url var="communityListUrl" value="/community">
+  <c:if test="${selectedCategory ne 'all'}">
+    <c:param name="category" value="${selectedCategory}" />
+  </c:if>
+</c:url>
+<c:url var="postCreateUrl" value="/community/posts" />
+<c:choose>
+  <c:when test="${not empty editPost}">
+    <c:url var="postFormUrl" value="/community/posts/${editPost.id}" />
+  </c:when>
+  <c:otherwise>
+    <c:set var="postFormUrl" value="${postCreateUrl}" />
+  </c:otherwise>
+</c:choose>
 
 <main class="page-shell">
   <div class="container">
     <section class="page-heading">
       <div>
         <h2>커뮤니티</h2>
-        <div class="subtle-text mt-2">게시글과 댓글 CRUD를 Spring MVC와 JSP 화면으로 분리했습니다.</div>
+        <div class="subtle-text mt-2">게시글과 댓글 CRUD를 Spring MVC와 RESTful 라우팅으로 정리했습니다.</div>
       </div>
     </section>
 
@@ -30,19 +44,18 @@
             </div>
           </div>
 
-          <form method="post" action="${communityUrl}">
-            <input type="hidden" name="action" value="${not empty editPost ? 'updatePost' : 'createPost'}">
+          <form method="post" action="${postFormUrl}">
             <c:if test="${not empty editPost}">
-              <input type="hidden" name="postId" value="${editPost.id}">
+              <input type="hidden" name="_method" value="patch">
             </c:if>
 
             <div class="row g-3">
               <div class="col-md-4">
                 <label class="form-label fw-semibold">분류</label>
                 <select class="form-select" name="category">
-                  <option value="review" ${not empty editPost and editPost.category eq 'review' ? 'selected="selected"' : ''}>${categoryLabelMap.review}</option>
-                  <option value="expert" ${not empty editPost and editPost.category eq 'expert' ? 'selected="selected"' : ''}>${categoryLabelMap.expert}</option>
-                  <option value="free" ${not empty editPost and editPost.category eq 'free' ? 'selected="selected"' : ''}>${categoryLabelMap.free}</option>
+                  <option value="review" ${(not empty editPost and editPost.category eq 'review') or (empty editPost and selectedCategory eq 'review') ? 'selected="selected"' : ''}>${categoryLabelMap.review}</option>
+                  <option value="expert" ${(not empty editPost and editPost.category eq 'expert') or (empty editPost and selectedCategory eq 'expert') ? 'selected="selected"' : ''}>${categoryLabelMap.expert}</option>
+                  <option value="free" ${(not empty editPost and editPost.category eq 'free') or (empty editPost and selectedCategory eq 'free') ? 'selected="selected"' : ''}>${categoryLabelMap.free}</option>
                 </select>
               </div>
 
@@ -73,6 +86,9 @@
                 <c:otherwise>게시글 등록</c:otherwise>
               </c:choose>
             </button>
+            <c:if test="${not empty editPost}">
+              <a class="btn btn-outline-secondary w-100 mt-2" href="${communityListUrl}">취소</a>
+            </c:if>
           </form>
         </section>
       </div>
@@ -105,9 +121,11 @@
             <c:otherwise>
               <c:forEach var="post" items="${posts}">
                 <c:set var="comments" value="${commentMap[post.id]}" />
-                <c:url var="editPostUrl" value="/community">
-                  <c:param name="editPostId" value="${post.id}" />
+                <c:url var="editPostUrl" value="/community/posts/${post.id}/edit">
+                  <c:param name="category" value="${selectedCategory}" />
                 </c:url>
+                <c:url var="deletePostUrl" value="/community/posts/${post.id}" />
+                <c:url var="createCommentUrl" value="/community/posts/${post.id}/comments" />
 
                 <div class="community-card mb-3">
                   <div class="d-flex justify-content-between align-items-start">
@@ -133,9 +151,9 @@
                     <c:if test="${currentUser.id eq post.userId}">
                       <div class="d-flex flex-column gap-2">
                         <a class="btn btn-outline-primary btn-sm" href="${editPostUrl}">수정</a>
-                        <form method="post" action="${communityUrl}">
-                          <input type="hidden" name="action" value="deletePost">
-                          <input type="hidden" name="postId" value="${post.id}">
+                        <form method="post" action="${deletePostUrl}">
+                          <input type="hidden" name="_method" value="delete">
+                          <input type="hidden" name="redirectCategory" value="${selectedCategory}">
                           <button class="btn btn-outline-danger btn-sm" type="submit">삭제</button>
                         </form>
                       </div>
@@ -143,9 +161,8 @@
                   </div>
 
                   <div class="mt-4 pt-3 border-top">
-                    <form method="post" action="${communityUrl}" class="mb-3">
-                      <input type="hidden" name="action" value="createComment">
-                      <input type="hidden" name="postId" value="${post.id}">
+                    <form method="post" action="${createCommentUrl}" class="mb-3">
+                      <input type="hidden" name="redirectCategory" value="${selectedCategory}">
                       <div class="input-group">
                         <input class="form-control" type="text" name="commentContent" placeholder="댓글을 입력하세요">
                         <button class="btn btn-success" type="submit">등록</button>
@@ -158,9 +175,11 @@
                       </c:when>
                       <c:otherwise>
                         <c:forEach var="comment" items="${comments}">
-                          <c:url var="editCommentUrl" value="/community">
-                            <c:param name="editCommentId" value="${comment.id}" />
+                          <c:url var="editCommentUrl" value="/community/comments/${comment.id}/edit">
+                            <c:param name="category" value="${selectedCategory}" />
                           </c:url>
+                          <c:url var="updateCommentUrl" value="/community/comments/${comment.id}" />
+                          <c:url var="deleteCommentUrl" value="/community/comments/${comment.id}" />
 
                           <div class="comment-row mb-2">
                             <div class="d-flex justify-content-between align-items-start">
@@ -170,14 +189,15 @@
 
                                 <c:choose>
                                   <c:when test="${not empty editComment and comment.id eq editComment.id}">
-                                    <form method="post" action="${communityUrl}" class="mt-2">
-                                      <input type="hidden" name="action" value="updateComment">
-                                      <input type="hidden" name="commentId" value="${comment.id}">
+                                    <form method="post" action="${updateCommentUrl}" class="mt-2">
+                                      <input type="hidden" name="_method" value="patch">
+                                      <input type="hidden" name="redirectCategory" value="${selectedCategory}">
                                       <div class="input-group">
                                         <input class="form-control" type="text" name="commentContent" value="${fn:escapeXml(comment.content)}">
                                         <button class="btn btn-outline-primary" type="submit">수정</button>
                                       </div>
                                     </form>
+                                    <a class="btn btn-outline-secondary btn-sm mt-2" href="${communityListUrl}">취소</a>
                                   </c:when>
                                   <c:otherwise>
                                     <div class="mt-2">
@@ -190,9 +210,9 @@
                               <c:if test="${currentUser.id eq comment.userId}">
                                 <div class="d-flex gap-2">
                                   <a class="btn btn-outline-primary btn-sm" href="${editCommentUrl}">수정</a>
-                                  <form method="post" action="${communityUrl}">
-                                    <input type="hidden" name="action" value="deleteComment">
-                                    <input type="hidden" name="commentId" value="${comment.id}">
+                                  <form method="post" action="${deleteCommentUrl}">
+                                    <input type="hidden" name="_method" value="delete">
+                                    <input type="hidden" name="redirectCategory" value="${selectedCategory}">
                                     <button class="btn btn-outline-danger btn-sm" type="submit">삭제</button>
                                   </form>
                                 </div>
