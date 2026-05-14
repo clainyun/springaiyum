@@ -77,6 +77,7 @@ public class CoachController {
         }
 
         NutritionSummary todaySummary = AppContainer.getMealService().summarize(todayFoods);
+        int todayPct = goal.getCalories() == 0 ? 0 : (int) Math.round((todaySummary.getCalories() / goal.getCalories()) * 100);
         List<ChallengeMembership> memberships = AppContainer.getChallengeService().membershipsForUser(user.getId());
         Map<String, Challenge> challengeMap = new HashMap<>();
         for (ChallengeMembership membership : memberships) {
@@ -89,6 +90,7 @@ public class CoachController {
         model.addAttribute("coachAdvice", advice);
         model.addAttribute("todaySummary", todaySummary);
         model.addAttribute("dailyGoal", goal);
+        model.addAttribute("todayPct", todayPct);
         model.addAttribute("memberships", memberships);
         model.addAttribute("challengeMap", challengeMap);
         return COACH_INDEX_VIEW;
