@@ -3,7 +3,7 @@
 <%@ include file="../common/header.jspf" %>
 <%@ include file="../common/navbar.jspf" %>
 <%@ include file="../common/flash.jspf" %>
-<c:url var="coachDashboardApiUrl" value="/api/me/coach-dashboard" />
+<c:url var="coachDashboardApiUrl" value="/coach/dashboard" />
 <c:url var="loginUrl" value="/auth/login" />
 
 <main class="page-shell">
