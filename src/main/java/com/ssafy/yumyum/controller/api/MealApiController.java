@@ -1,22 +1,32 @@
 package com.ssafy.yumyum.controller.api;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ssafy.yumyum.dto.common.MessageResponse;
 import com.ssafy.yumyum.dto.meal.MealDetailResponse;
+import com.ssafy.yumyum.dto.meal.MealFoodSelectionRequest;
+import com.ssafy.yumyum.dto.meal.MealRequest;
 import com.ssafy.yumyum.dto.meal.MealSummaryResponse;
 import com.ssafy.yumyum.exception.CustomException;
+import com.ssafy.yumyum.model.FoodItem;
 import com.ssafy.yumyum.model.Meal;
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.repository.UserRepository;
 import com.ssafy.yumyum.service.MealService;
+import com.ssafy.yumyum.util.ServiceResult;
 import com.ssafy.yumyum.util.SessionUtils;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -71,6 +81,64 @@ public class MealApiController {
         return ResponseEntity.ok(MealDetailResponse.from(meal, mealService.summarize(meal.getFoods())));
     }
 
+    @PostMapping
+    @Operation(summary = "식단 생성", description = "로그인한 사용자의 새 식단을 생성합니다.")
+    public ResponseEntity<MealDetailResponse> create(@RequestBody MealRequest request, HttpServletRequest httpRequest) {
+        User user = getCurrentUser(httpRequest);
+        ServiceResult<Meal> result = mealService.createMeal(
+                user,
+                parseDate(request.mealDate()),
+                valueOrDefault(request.mealType(), "lunch"),
+                request.memo(),
+                resolveFoods(request.foods())
+        );
+
+        if (!result.isOk()) {
+            throw new CustomException(400, result.getMessage());
+        }
+
+        Meal meal = result.getData();
+        return ResponseEntity.status(201)
+                .body(MealDetailResponse.from(meal, mealService.summarize(meal.getFoods())));
+    }
+
+    @PutMapping("/{mealId}")
+    @Operation(summary = "식단 수정", description = "로그인한 사용자의 식단을 수정합니다.")
+    public ResponseEntity<MealDetailResponse> update(@PathVariable String mealId,
+                                                     @RequestBody MealRequest request,
+                                                     HttpServletRequest httpRequest) {
+        User user = getCurrentUser(httpRequest);
+        ServiceResult<Meal> result = mealService.updateMeal(
+                user,
+                mealId,
+                parseDate(request.mealDate()),
+                valueOrDefault(request.mealType(), "lunch"),
+                request.memo(),
+                resolveFoods(request.foods())
+        );
+
+        if (!result.isOk()) {
+            throw new CustomException(400, result.getMessage());
+        }
+
+        Meal meal = result.getData();
+        return ResponseEntity.ok(MealDetailResponse.from(meal, mealService.summarize(meal.getFoods())));
+    }
+
+    @DeleteMapping("/{mealId}")
+    @Operation(summary = "식단 삭제", description = "로그인한 사용자의 식단을 삭제합니다.")
+    public ResponseEntity<MessageResponse> delete(@PathVariable String mealId, HttpServletRequest request) {
+        User user = getCurrentUser(request);
+        Meal meal = mealService.findById(mealId);
+
+        if (meal == null || !user.getId().equals(meal.getUserId())) {
+            throw new CustomException(404, "식단을 찾을 수 없습니다.");
+        }
+
+        mealService.deleteMeal(user, mealId);
+        return ResponseEntity.ok(new MessageResponse("식단을 삭제했습니다."));
+    }
+
     private User getCurrentUser(HttpServletRequest request) {
         String loginUserId = SessionUtils.currentUserId(request);
         if (loginUserId == null) {
@@ -95,5 +163,29 @@ public class MealApiController {
 
     private String valueOrDefault(String value, String fallback) {
         return value == null || value.trim().isEmpty() ? fallback : value;
+    }
+
+    private List<FoodItem> resolveFoods(List<MealFoodSelectionRequest> selections) {
+        List<FoodItem> foods = new ArrayList<>();
+
+        if (selections == null) {
+            return foods;
+        }
+
+        for (MealFoodSelectionRequest selection : selections) {
+            if (selection == null || selection.code() == null || selection.code().trim().isEmpty()) {
+                continue;
+            }
+
+            FoodItem base = mealService.findFood(selection.code());
+            if (base == null) {
+                continue;
+            }
+
+            double grams = selection.grams() == null || selection.grams() <= 0 ? 100.0 : selection.grams();
+            foods.add(base.copyWithGrams(grams));
+        }
+
+        return foods;
     }
 }
