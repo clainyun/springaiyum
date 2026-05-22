@@ -17,16 +17,18 @@ import com.ssafy.yumyum.model.User;
 
 public final class SeedDataFactory {
 
+    private static final String DEMO_PASSWORD_HASH = "$2a$10$6i0ksIIYtT0nWKwoYblkJO50B1sesL2GiPcYdREo3/8CyAsCUjka.";
+
     private SeedDataFactory() {
     }
 
     public static List<User> users() {
         LocalDateTime now = LocalDateTime.now().minusDays(7);
         List<User> users = new ArrayList<>();
-        users.add(user("user_demo", "demo@yamyam.com", "Demo1234!", "데모 사용자", "male", 1996, 176, 72, "health", "", now));
-        users.add(user("user_mina", "mina@yamyam.com", "Demo1234!", "민아", "female", 1998, 164, 55, "diet", "당 섭취 과다 주의", now.plusHours(1)));
-        users.add(user("user_joon", "joon@yamyam.com", "Demo1234!", "준호", "male", 1994, 181, 81, "muscle", "", now.plusHours(2)));
-        users.add(user("user_hana", "hana@yamyam.com", "Demo1234!", "하나", "female", 1997, 168, 60, "health", "짠 음식 주의", now.plusHours(3)));
+        users.add(user("user_demo", "demo@yamyam.com", DEMO_PASSWORD_HASH, "데모 사용자", "male", 1996, 176, 72, "health", "", now));
+        users.add(user("user_mina", "mina@yamyam.com", DEMO_PASSWORD_HASH, "민아", "female", 1998, 164, 55, "diet", "당 섭취 과다 주의", now.plusHours(1)));
+        users.add(user("user_joon", "joon@yamyam.com", DEMO_PASSWORD_HASH, "준호", "male", 1994, 181, 81, "muscle", "", now.plusHours(2)));
+        users.add(user("user_hana", "hana@yamyam.com", DEMO_PASSWORD_HASH, "하나", "female", 1997, 168, 60, "health", "짠 음식 주의", now.plusHours(3)));
         return users;
     }
 
