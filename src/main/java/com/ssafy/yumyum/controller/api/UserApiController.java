@@ -2,13 +2,17 @@ package com.ssafy.yumyum.controller.api;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ssafy.yumyum.dto.user.UpdateUserProfileRequest;
 import com.ssafy.yumyum.dto.user.UserProfileResponse;
 import com.ssafy.yumyum.exception.CustomException;
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.service.UserService;
+import com.ssafy.yumyum.util.ServiceResult;
 import com.ssafy.yumyum.util.SessionUtils;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,6 +32,29 @@ public class UserApiController {
     @GetMapping("/me")
     public ResponseEntity<UserProfileResponse> me(HttpServletRequest request) {
         return ResponseEntity.ok(UserProfileResponse.from(getCurrentUser(request)));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UserProfileResponse> updateProfile(@RequestBody UpdateUserProfileRequest request,
+                                                             HttpServletRequest httpRequest) {
+        User currentUser = getCurrentUser(httpRequest);
+        ServiceResult<User> result = userService.updateProfile(
+                currentUser,
+                request.email(),
+                request.nickname(),
+                request.password(),
+                request.gender(),
+                request.birthYear() == null ? currentUser.getBirthYear() : request.birthYear(),
+                request.height() == null ? currentUser.getHeight() : request.height(),
+                request.weight() == null ? currentUser.getWeight() : request.weight(),
+                request.goal(),
+                request.healthNote()
+        );
+        if (!result.isOk()) {
+            throw new CustomException(400, result.getMessage());
+        }
+
+        return ResponseEntity.ok(UserProfileResponse.from(result.getData()));
     }
 
     private User getCurrentUser(HttpServletRequest request) {
