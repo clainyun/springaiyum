@@ -1,0 +1,294 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "YumYumCoach API", "description": "YumYumCoach REST API 문서", "version": "v1" },
+  "servers": [{ "url": "http://localhost:8080", "description": "Generated server url" }],
+  "tags": [
+    { "name": "Food API", "description": "식품 검색 API" },
+    { "name": "Meal API", "description": "식단 관리 API" },
+    { "name": "Health API", "description": "기반 설정 점검용 API" },
+    { "name": "Auth API", "description": "세션 기반 인증 API" },
+    { "name": "User API", "description": "사용자 프로필 API" }
+  ],
+  "paths": {
+    "/api/v1/users/me": {
+      "get": {
+        "tags": ["User API"],
+        "summary": "내 정보 조회",
+        "description": "로그인한 사용자의 프로필 정보를 조회합니다.",
+        "operationId": "me",
+        "responses": { "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/UserProfileResponse" } } } } }
+      },
+      "put": {
+        "tags": ["User API"],
+        "summary": "내 정보 수정",
+        "description": "로그인한 사용자의 프로필 정보를 수정합니다.",
+        "operationId": "updateProfile",
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateUserProfileRequest" } } },
+          "required": true
+        },
+        "responses": { "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/UserProfileResponse" } } } } }
+      }
+    },
+    "/api/v1/meals/{mealId}": {
+      "get": {
+        "tags": ["Meal API"],
+        "summary": "식단 상세 조회",
+        "description": "로그인한 사용자의 특정 식단 상세 정보를 조회합니다.",
+        "operationId": "detail",
+        "parameters": [{ "name": "mealId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/MealDetailResponse" } } } } }
+      },
+      "put": {
+        "tags": ["Meal API"],
+        "summary": "식단 수정",
+        "description": "로그인한 사용자의 식단을 수정합니다.",
+        "operationId": "update",
+        "parameters": [{ "name": "mealId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MealRequest" } } }, "required": true },
+        "responses": { "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/MealDetailResponse" } } } } }
+      },
+      "delete": {
+        "tags": ["Meal API"],
+        "summary": "식단 삭제",
+        "description": "로그인한 사용자의 식단을 삭제합니다.",
+        "operationId": "delete",
+        "parameters": [{ "name": "mealId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } } }
+      }
+    },
+    "/api/v1/meals": {
+      "get": {
+        "tags": ["Meal API"],
+        "summary": "식단 목록 조회",
+        "description": "로그인한 사용자의 식단 목록을 조회합니다.",
+        "operationId": "list",
+        "parameters": [
+          { "name": "startDate", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "endDate", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "mealType", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "sortKey", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "*/*": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/MealSummaryResponse" } } } }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Meal API"],
+        "summary": "식단 생성",
+        "description": "로그인한 사용자의 새 식단을 생성합니다.",
+        "operationId": "create",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MealRequest" } } }, "required": true },
+        "responses": { "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/MealDetailResponse" } } } } }
+      }
+    },
+    "/api/v1/auth/signup": {
+      "post": {
+        "tags": ["Auth API"],
+        "summary": "회원가입",
+        "description": "사용자를 등록하고 바로 로그인 세션을 생성합니다.",
+        "operationId": "signup",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SignupRequest" } } }, "required": true },
+        "responses": { "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } } }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": ["Auth API"],
+        "summary": "로그아웃",
+        "description": "현재 세션을 종료합니다.",
+        "operationId": "logout",
+        "responses": { "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } } }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["Auth API"],
+        "summary": "로그인",
+        "description": "이메일과 비밀번호로 로그인하고 세션을 생성합니다.",
+        "operationId": "login",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } }, "required": true },
+        "responses": { "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } } }
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "tags": ["Health API"],
+        "summary": "헬스 체크",
+        "description": "REST API 기본 구성이 정상 동작하는지 확인한다.",
+        "operationId": "health",
+        "responses": { "200": { "description": "OK", "content": { "*/*": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/api/v1/foods": {
+      "get": {
+        "tags": ["Food API"],
+        "summary": "식품 검색",
+        "description": "키워드로 식품 카탈로그를 조회합니다. 키워드가 없으면 전체 목록을 반환합니다.",
+        "operationId": "search",
+        "parameters": [{ "name": "keyword", "in": "query", "required": false, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "*/*": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/FoodResponse" } } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UpdateUserProfileRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "description": "이메일", "example": "demo@yamyam.com" },
+          "nickname": { "type": "string", "description": "닉네임", "example": "데모 사용자" },
+          "password": { "type": "string", "description": "변경할 비밀번호", "example": "NewDemo1234!" },
+          "gender": { "type": "string", "description": "성별", "example": "male" },
+          "birthYear": { "type": "integer", "format": "int32", "description": "출생 연도", "example": 1996 },
+          "height": { "type": "number", "format": "double", "description": "키(cm)", "example": 176 },
+          "weight": { "type": "number", "format": "double", "description": "몸무게(kg)", "example": 72 },
+          "goal": { "type": "string", "description": "목표", "example": "health" },
+          "healthNote": { "type": "string", "description": "건강 메모", "example": "짠 음식 주의" }
+        }
+      },
+      "UserProfileResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "사용자 ID", "example": "user_demo" },
+          "email": { "type": "string", "description": "이메일", "example": "demo@yamyam.com" },
+          "nickname": { "type": "string", "description": "닉네임", "example": "데모 사용자" },
+          "gender": { "type": "string", "description": "성별", "example": "male" },
+          "birthYear": { "type": "integer", "format": "int32", "description": "출생 연도", "example": 1996 },
+          "height": { "type": "number", "format": "double", "description": "키(cm)", "example": 176 },
+          "weight": { "type": "number", "format": "double", "description": "몸무게(kg)", "example": 72 },
+          "goal": { "type": "string", "description": "목표", "example": "health" },
+          "healthNote": { "type": "string", "description": "건강 메모", "example": "짠 음식 주의" },
+          "active": { "type": "boolean", "description": "활성 여부", "example": true }
+        }
+      },
+      "MealFoodSelectionRequest": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string", "description": "선택한 식품 코드", "example": "food_oat" },
+          "grams": { "type": "number", "format": "double", "description": "선택한 중량(g)", "example": 180.0 }
+        }
+      },
+      "MealRequest": {
+        "type": "object",
+        "properties": {
+          "mealDate": { "type": "string", "description": "식단 날짜", "example": "2026-05-22" },
+          "mealType": { "type": "string", "description": "식사 유형", "example": "lunch" },
+          "memo": { "type": "string", "description": "메모", "example": "채소와 단백질 중심 점심" },
+          "foods": { "type": "array", "items": { "$ref": "#/components/schemas/MealFoodSelectionRequest" } }
+        }
+      },
+      "MealDetailResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "식단 ID", "example": "meal_demo_lunch" },
+          "userId": { "type": "string", "description": "사용자 ID", "example": "user_demo" },
+          "mealDate": { "type": "string", "format": "date", "description": "식단 날짜", "example": "2026-05-22" },
+          "mealType": { "type": "string", "description": "식사 유형", "example": "lunch" },
+          "memo": { "type": "string", "description": "메모", "example": "채소와 단백질 중심 점심" },
+          "foods": { "type": "array", "items": { "$ref": "#/components/schemas/MealFoodResponse" } },
+          "nutrition": { "$ref": "#/components/schemas/MealNutritionResponse", "description": "식단 영양 요약" },
+          "createdAt": { "type": "string", "format": "date-time", "description": "생성 시각" },
+          "updatedAt": { "type": "string", "format": "date-time", "description": "수정 시각" }
+        }
+      },
+      "MealFoodResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string", "description": "식품 코드", "example": "food_oat" },
+          "name": { "type": "string", "description": "식품 이름", "example": "오트밀" },
+          "category": { "type": "string", "description": "식품 분류", "example": "곡류" },
+          "grams": { "type": "number", "format": "double", "description": "선택한 중량(g)", "example": 180.0 },
+          "energy": { "type": "number", "format": "double", "description": "열량(kcal)", "example": 684.0 },
+          "carbs": { "type": "number", "format": "double", "description": "탄수화물(g)", "example": 118.8 },
+          "protein": { "type": "number", "format": "double", "description": "단백질(g)", "example": 23.4 },
+          "fat": { "type": "number", "format": "double", "description": "지방(g)", "example": 12.6 }
+        }
+      },
+      "MealNutritionResponse": {
+        "type": "object",
+        "properties": {
+          "calories": { "type": "number", "format": "double", "description": "총 열량(kcal)", "example": 512.4 },
+          "carbs": { "type": "number", "format": "double", "description": "총 탄수화물(g)", "example": 53.0 },
+          "protein": { "type": "number", "format": "double", "description": "총 단백질(g)", "example": 30.4 },
+          "fat": { "type": "number", "format": "double", "description": "총 지방(g)", "example": 14.2 },
+          "carbsPct": { "type": "integer", "format": "int32", "description": "탄수화물 비율(%)", "example": 41 },
+          "proteinPct": { "type": "integer", "format": "int32", "description": "단백질 비율(%)", "example": 24 },
+          "fatPct": { "type": "integer", "format": "int32", "description": "지방 비율(%)", "example": 25 }
+        }
+      },
+      "SignupRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "description": "회원 이메일", "example": "newuser@yamyam.com" },
+          "password": { "type": "string", "description": "회원 비밀번호", "example": "Demo1234!" },
+          "nickname": { "type": "string", "description": "닉네임", "example": "새사용자" },
+          "gender": { "type": "string", "description": "성별", "example": "female" },
+          "birthYear": { "type": "integer", "format": "int32", "description": "출생 연도", "example": 1998 },
+          "height": { "type": "number", "format": "double", "description": "키(cm)", "example": 165 },
+          "weight": { "type": "number", "format": "double", "description": "몸무게(kg)", "example": 60 },
+          "goal": { "type": "string", "description": "목표", "example": "health" },
+          "healthNote": { "type": "string", "description": "건강 메모", "example": "짠 음식 주의" }
+        }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string", "description": "처리 결과 메시지", "example": "로그인되었습니다." },
+          "user": { "$ref": "#/components/schemas/UserSummaryResponse", "description": "로그인 또는 가입된 사용자 요약 정보" }
+        }
+      },
+      "UserSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "사용자 ID", "example": "user_demo" },
+          "email": { "type": "string", "description": "이메일", "example": "demo@yamyam.com" },
+          "nickname": { "type": "string", "description": "닉네임", "example": "데모 사용자" },
+          "active": { "type": "boolean", "description": "활성 여부", "example": true }
+        }
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": { "message": { "type": "string", "description": "처리 결과 메시지", "example": "로그아웃되었습니다." } }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "description": "로그인 이메일", "example": "demo@yamyam.com" },
+          "password": { "type": "string", "description": "로그인 비밀번호", "example": "Demo1234!" }
+        }
+      },
+      "MealSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "식단 ID", "example": "meal_demo_lunch" },
+          "mealDate": { "type": "string", "format": "date", "description": "식단 날짜", "example": "2026-05-22" },
+          "mealType": { "type": "string", "description": "식사 유형", "example": "lunch" },
+          "memo": { "type": "string", "description": "메모", "example": "채소와 단백질 중심 점심" },
+          "nutrition": { "$ref": "#/components/schemas/MealNutritionResponse", "description": "식단 영양 요약" }
+        }
+      },
+      "FoodResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string", "description": "식품 코드", "example": "food_oat" },
+          "name": { "type": "string", "description": "식품 이름", "example": "오트밀" },
+          "category": { "type": "string", "description": "식품 분류", "example": "곡류" },
+          "grams": { "type": "number", "format": "double", "description": "기준 중량(g)", "example": 100.0 },
+          "energy": { "type": "number", "format": "double", "description": "열량(kcal)", "example": 380.0 },
+          "carbs": { "type": "number", "format": "double", "description": "탄수화물(g)", "example": 66.0 },
+          "protein": { "type": "number", "format": "double", "description": "단백질(g)", "example": 13.0 },
+          "fat": { "type": "number", "format": "double", "description": "지방(g)", "example": 7.0 }
+        }
+      }
+    }
+  }
+}
