@@ -17,6 +17,7 @@ import com.ssafy.yumyum.service.AuthService;
 import com.ssafy.yumyum.util.ServiceResult;
 import com.ssafy.yumyum.util.SessionUtils;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -32,6 +33,7 @@ public class AuthApiController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인하고 세션을 생성합니다.")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         ServiceResult<User> result = authService.login(request.email(), request.password());
         if (!result.isOk()) {
@@ -43,6 +45,7 @@ public class AuthApiController {
     }
 
     @PostMapping("/signup")
+    @Operation(summary = "회원가입", description = "사용자를 등록하고 바로 로그인 세션을 생성합니다.")
     public ResponseEntity<AuthResponse> signup(@RequestBody SignupRequest request, HttpServletRequest httpRequest) {
         ServiceResult<User> result = authService.register(
                 request.email(),
@@ -65,6 +68,7 @@ public class AuthApiController {
     }
 
     @PostMapping("/logout")
+    @Operation(summary = "로그아웃", description = "현재 세션을 종료합니다.")
     public ResponseEntity<MessageResponse> logout(HttpServletRequest request) {
         SessionUtils.logout(request.getSession(false));
         return ResponseEntity.ok(new MessageResponse("로그아웃되었습니다."));

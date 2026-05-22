@@ -15,6 +15,7 @@ import com.ssafy.yumyum.service.UserService;
 import com.ssafy.yumyum.util.ServiceResult;
 import com.ssafy.yumyum.util.SessionUtils;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -30,11 +31,13 @@ public class UserApiController {
     }
 
     @GetMapping("/me")
+    @Operation(summary = "내 정보 조회", description = "로그인한 사용자의 프로필 정보를 조회합니다.")
     public ResponseEntity<UserProfileResponse> me(HttpServletRequest request) {
         return ResponseEntity.ok(UserProfileResponse.from(getCurrentUser(request)));
     }
 
     @PutMapping("/me")
+    @Operation(summary = "내 정보 수정", description = "로그인한 사용자의 프로필 정보를 수정합니다.")
     public ResponseEntity<UserProfileResponse> updateProfile(@RequestBody UpdateUserProfileRequest request,
                                                              HttpServletRequest httpRequest) {
         User currentUser = getCurrentUser(httpRequest);

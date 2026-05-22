@@ -90,6 +90,13 @@ public class LoginCheckFilter implements Filter {
     }
 
     private boolean expectsJson(HttpServletRequest request) {
+        String requestUri = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        String path = requestUri.substring(contextPath.length());
+        if (path.startsWith("/api/")) {
+            return true;
+        }
+
         String accept = request.getHeader("Accept");
         if (accept != null && accept.contains("application/json")) {
             return true;
