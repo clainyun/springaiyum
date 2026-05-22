@@ -3,6 +3,27 @@
 - 1541268 윤다인
 - 1544345 김동주
 
+## 프로젝트 이력
+
+- `springyum`: Servlet/JSP 기반 프로젝트를 Spring Boot + Spring MVC/JSP 구조로 1차 전환한 시점
+- `master`: 분석 문서 작성 후 REST API 확장 1차 구현을 반영한 시점
+
+## `springyum` 이후 `master` 변경점
+
+- 기반: Spring Security, BCrypt `PasswordEncoder`, AOP 로깅, Swagger(OpenAPI), API 예외 처리 추가
+- API: `/api/v1/auth`, `/api/v1/users/me`, `/api/v1/meals`, `/api/v1/foods`, `/api/v1/health` 추가
+- 보안: 회원가입/비밀번호 변경 암호화, 레거시 평문 비밀번호 점진 마이그레이션 적용
+- 품질: `WebMvcTest`, `assets/openapi.json`, `docs/RESTAPI-PLAN.md` 추가
+- 다음 단계: 챌린지·소셜 영속화, 추가 REST API 공개
+
+## API 문서
+
+- OpenAPI Spec: [openapi.json](./assets/openapi.json)
+- Swagger UI: http://localhost:8080/swagger-ui/index.html
+- Swagger UI 캡처:
+
+![Swagger UI](./assets/swagger.png)
+
 ## 프로젝트 개요
 
 기존 Servlet/JSP 기반 YumYumCoach 프로젝트를 Spring Boot 기반 구조로 전환했습니다.
@@ -178,8 +199,9 @@ server.servlet.encoding.enabled=true
 server.servlet.encoding.force=true
 ```
 
-## DB 관련 파일
+## 관련 파일
 
+- [openapi.json](./assets/openapi.json)
 - [ssafy_yumyumcoach.mwb](./assets/ssafy_yumyumcoach.mwb)
 - [ssafy_yumyumcoach.png](./assets/ssafy_yumyumcoach.png)
 - [ssafy_yumyumcoach.sql](./assets/ssafy_yumyumcoach.sql)
