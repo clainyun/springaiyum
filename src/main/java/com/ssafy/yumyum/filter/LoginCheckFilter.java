@@ -110,6 +110,8 @@ public class LoginCheckFilter implements Filter {
                 || path.equals("/auth/login")
                 || path.equals("/auth/signup")
                 || path.equals("/auth/logout")
+                || path.equals("/api/v1/health")
+                || path.equals("/api/v1/health/")
                 || path.equals("/swagger-ui.html")
                 || path.startsWith("/swagger-ui/")
                 || path.equals("/v3/api-docs")
