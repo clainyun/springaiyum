@@ -90,6 +90,13 @@ public class LoginCheckFilter implements Filter {
     }
 
     private boolean expectsJson(HttpServletRequest request) {
+        String requestUri = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        String path = requestUri.substring(contextPath.length());
+        if (path.startsWith("/api/")) {
+            return true;
+        }
+
         String accept = request.getHeader("Accept");
         if (accept != null && accept.contains("application/json")) {
             return true;
@@ -108,6 +115,9 @@ public class LoginCheckFilter implements Filter {
         return path.equals("/auth/login")
                 || path.equals("/auth/signup")
                 || path.equals("/auth/logout")
+                || path.equals("/api/v1/auth/login")
+                || path.equals("/api/v1/auth/signup")
+                || path.equals("/api/v1/auth/logout")
                 || path.equals("/api/v1/health")
                 || path.equals("/api/v1/health/")
                 || path.equals("/swagger-ui.html")
