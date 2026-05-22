@@ -1,11 +1,18 @@
 package com.ssafy.yumyum.controller.api;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ssafy.yumyum.dto.user.UserProfileResponse;
+import com.ssafy.yumyum.exception.CustomException;
+import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.service.UserService;
+import com.ssafy.yumyum.util.SessionUtils;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -16,5 +23,24 @@ public class UserApiController {
 
     public UserApiController(UserService userService) {
         this.userService = userService;
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileResponse> me(HttpServletRequest request) {
+        return ResponseEntity.ok(UserProfileResponse.from(getCurrentUser(request)));
+    }
+
+    private User getCurrentUser(HttpServletRequest request) {
+        String loginUserId = SessionUtils.currentUserId(request);
+        if (loginUserId == null) {
+            throw new CustomException(401, "로그인이 필요합니다.");
+        }
+
+        User user = userService.findById(loginUserId);
+        if (user == null || !user.isActive()) {
+            throw new CustomException(401, "로그인 정보를 찾을 수 없습니다.");
+        }
+
+        return user;
     }
 }
