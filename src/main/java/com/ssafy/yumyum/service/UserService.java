@@ -1,5 +1,11 @@
 package com.ssafy.yumyum.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import com.ssafy.yumyum.model.Challenge;
 import com.ssafy.yumyum.model.ChallengeMembership;
 import com.ssafy.yumyum.model.CommunityComment;
@@ -14,11 +20,6 @@ import com.ssafy.yumyum.repository.SocialRepository;
 import com.ssafy.yumyum.repository.UserRepository;
 import com.ssafy.yumyum.util.ServiceResult;
 
-import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-
 @Service
 public class UserService {
 
@@ -27,17 +28,20 @@ public class UserService {
     private final SocialRepository socialRepository;
     private final ChallengeRepository challengeRepository;
     private final CommunityRepository communityRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public UserService(UserRepository userRepository,
                        MealRepository mealRepository,
                        SocialRepository socialRepository,
                        ChallengeRepository challengeRepository,
-                       CommunityRepository communityRepository) {
+                       CommunityRepository communityRepository,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.mealRepository = mealRepository;
         this.socialRepository = socialRepository;
         this.challengeRepository = challengeRepository;
         this.communityRepository = communityRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public User findById(String userId) {
@@ -63,7 +67,6 @@ public class UserService {
         }
 
         String trimmedEmail = email.trim();
-
         User duplicated = userRepository.findByEmail(trimmedEmail);
         if (duplicated != null && !duplicated.getId().equals(user.getId())) {
             return ServiceResult.failure("이미 사용 중인 이메일입니다.");
@@ -80,7 +83,7 @@ public class UserService {
             if (password.length() < 8) {
                 return ServiceResult.failure("비밀번호는 8자 이상이어야 합니다.");
             }
-            user.setPassword(password);
+            user.setPassword(passwordEncoder.encode(password));
         }
 
         user.setGender(gender);
@@ -91,7 +94,6 @@ public class UserService {
         user.setHealthNote(healthNote == null ? "" : healthNote.trim());
 
         userRepository.save(user);
-
         return ServiceResult.success("프로필을 수정했습니다.", user);
     }
 

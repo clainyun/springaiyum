@@ -1,6 +1,7 @@
 package com.ssafy.yumyum.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.repository.UserRepository;
@@ -11,9 +12,11 @@ import com.ssafy.yumyum.util.ServiceResult;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public AuthService(UserRepository userRepository) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public ServiceResult<User> login(String email, String password) {
@@ -59,7 +62,7 @@ public class AuthService {
         User user = new User();
         user.setId(IdGenerator.next("USER"));
         user.setEmail(trimmedEmail);
-        user.setPassword(password);
+        user.setPassword(passwordEncoder.encode(password));
         user.setNickname(nickname.trim());
         user.setGender(gender);
         user.setBirthYear(birthYear);
