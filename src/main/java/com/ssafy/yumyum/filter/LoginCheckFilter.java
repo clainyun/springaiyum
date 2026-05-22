@@ -105,9 +105,7 @@ public class LoginCheckFilter implements Filter {
     }
 
     private boolean isPublicPath(String path) {
-        return path.equals("")
-                || path.equals("/")
-                || path.equals("/auth/login")
+        return path.equals("/auth/login")
                 || path.equals("/auth/signup")
                 || path.equals("/auth/logout")
                 || path.equals("/api/v1/health")
