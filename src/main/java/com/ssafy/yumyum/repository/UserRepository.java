@@ -2,6 +2,7 @@ package com.ssafy.yumyum.repository;
 
 import org.springframework.stereotype.Repository;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -38,8 +39,11 @@ public class UserRepository {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """;
 
+    private final boolean numericUserId;
+
     public UserRepository(List<User> seedUsers) {
         initializeSchema();
+        this.numericUserId = isNumericUserIdColumn();
         seedIfEmpty(seedUsers == null ? List.of() : seedUsers);
     }
 
@@ -109,6 +113,11 @@ public class UserRepository {
     public synchronized void save(User user) {
         Objects.requireNonNull(user, "user must not be null");
 
+        if (numericUserId) {
+            saveWithGeneratedId(user);
+            return;
+        }
+
         String sql = """
             INSERT INTO users (
                 user_id, email, password, nickname, gender, birth_year, height, weight,
@@ -155,6 +164,54 @@ public class UserRepository {
         }
     }
 
+    private void saveWithGeneratedId(User user) {
+        String sql = """
+            INSERT INTO users (
+                email, password, nickname, gender, birth_year, height, weight,
+                goal, health_note, active, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                password = VALUES(password),
+                nickname = VALUES(nickname),
+                gender = VALUES(gender),
+                birth_year = VALUES(birth_year),
+                height = VALUES(height),
+                weight = VALUES(weight),
+                goal = VALUES(goal),
+                health_note = VALUES(health_note),
+                active = VALUES(active),
+                updated_at = VALUES(updated_at)
+            """;
+
+        LocalDateTime createdAt = user.getCreatedAt() == null ? LocalDateTime.now() : user.getCreatedAt();
+        LocalDateTime updatedAt = LocalDateTime.now();
+
+        try (Connection connection = DBUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, user.getEmail());
+            statement.setString(2, user.getPassword());
+            statement.setString(3, user.getNickname());
+            statement.setString(4, user.getGender());
+            statement.setInt(5, user.getBirthYear());
+            statement.setDouble(6, user.getHeight());
+            statement.setDouble(7, user.getWeight());
+            statement.setString(8, user.getGoal());
+            statement.setString(9, user.getHealthNote());
+            statement.setBoolean(10, user.isActive());
+            statement.setTimestamp(11, Timestamp.valueOf(createdAt));
+            statement.setTimestamp(12, Timestamp.valueOf(updatedAt));
+            statement.executeUpdate();
+
+            User saved = findByEmail(user.getEmail());
+            if (saved != null) {
+                user.setId(saved.getId());
+            }
+            user.setCreatedAt(createdAt);
+        } catch (SQLException e) {
+            throw new IllegalStateException("사용자 정보를 저장하지 못했습니다.", e);
+        }
+    }
+
     public synchronized void delete(String userId) {
         String sql = "DELETE FROM users WHERE user_id = ?";
 
@@ -174,6 +231,21 @@ public class UserRepository {
         } catch (SQLException e) {
             throw new IllegalStateException("UserRepository 테이블을 초기화하지 못했습니다.", e);
         }
+    }
+
+    private boolean isNumericUserIdColumn() {
+        try (Connection connection = DBUtil.getConnection()) {
+            DatabaseMetaData metaData = connection.getMetaData();
+            try (ResultSet columns = metaData.getColumns(connection.getCatalog(), null, "users", "user_id")) {
+                if (columns.next()) {
+                    String typeName = columns.getString("TYPE_NAME");
+                    return typeName != null && typeName.toUpperCase().contains("INT");
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("users.user_id 컬럼 정보를 확인하지 못했습니다.", e);
+        }
+        return false;
     }
 
     private void seedIfEmpty(List<User> seedUsers) {
