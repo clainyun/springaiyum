@@ -1,0 +1,28 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "version": "1",
+        "title": "농림수산식품교육문화정보원_칼로리 정보",
+        "description": "https://www.data.go.kr/data/15050912/fileData.do#tab-layer-openapi"
+    },
+    "host": "api.odcloud.kr",
+    "basePath": "/api",
+    "schemes": [
+        "https",
+        "http"
+    ],
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "Authorization"
+        },
+        "ApiKeyAuth2": {
+            "type": "apiKey",
+            "in": "query",
+            "name": "serviceKey"
+        }
+    },
+    "paths": {},
+    "definitions": {}
+}
