@@ -15,6 +15,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "Batch API", description = "Spring Batch 수동 실행 API")
 @RestController
 @RequestMapping("/batch")
 public class NutritionBatchApiController {
@@ -27,11 +32,19 @@ public class NutritionBatchApiController {
         this.jobExplorer = jobExplorer;
     }
 
+    @Operation(
+            summary = "영양성분 DB 배치 적재 시작",
+            description = "CSV 또는 XLSX 영양성분 파일을 staging 테이블에 적재한 뒤 정제하여 food_nutrition에 upsert합니다."
+    )
     @GetMapping("/nutrition-import")
     public ResponseEntity<Map<String, Object>> startNutritionImport(
+            @Parameter(description = "서버 로컬 기준 원본 파일 경로", example = "data/영양성분 DB/농림수산식품교육문화정보원_칼로리 정보_20190926.csv")
             @RequestParam String sourcePath,
+            @Parameter(description = "배치 리포트에 표시할 원본 이름. 생략하면 파일명을 사용합니다.", example = "농림수산 칼로리 CSV")
             @RequestParam(required = false) String sourceName,
+            @Parameter(description = "청크 크기. 1~500 사이로 보정됩니다.", example = "100")
             @RequestParam(defaultValue = "100") int chunkSize,
+            @Parameter(description = "JobInstance 식별용 실행 값. 생략하면 현재 시간을 사용합니다.", example = "manual-20260529-001")
             @RequestParam(required = false) String runTime) throws Exception {
 
         Path path = Path.of(sourcePath);
@@ -60,8 +73,14 @@ public class NutritionBatchApiController {
         return ResponseEntity.accepted().body(body);
     }
 
+    @Operation(
+            summary = "영양성분 DB 배치 재시작",
+            description = "실패 또는 중단된 nutritionImportJob 실행을 executionId 기준으로 재시작합니다."
+    )
     @GetMapping("/nutrition-import/restart")
-    public ResponseEntity<Map<String, Object>> restartNutritionImport(@RequestParam long executionId) throws Exception {
+    public ResponseEntity<Map<String, Object>> restartNutritionImport(
+            @Parameter(description = "재시작할 Spring Batch JobExecution ID", example = "123")
+            @RequestParam long executionId) throws Exception {
         long restartedExecutionId = jobOperator.restart(executionId);
         JobExecution execution = jobExplorer.getJobExecution(restartedExecutionId);
 
