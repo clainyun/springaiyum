@@ -208,6 +208,21 @@ public class NutritionImportRepository {
         );
     }
 
+    public List<NutritionImportFailureSample> findFailureSamples(long jobExecutionId, int limit) {
+        return jdbcTemplate.query("""
+                SELECT source_row_no, raw_food_name, error_message
+                FROM nutrition_import_staging
+                WHERE job_execution_id = ?
+                  AND import_status = 'FAILED'
+                ORDER BY staging_id
+                LIMIT ?
+                """, (rs, rowNum) -> new NutritionImportFailureSample(
+                rs.getInt("source_row_no"),
+                rs.getString("raw_food_name"),
+                rs.getString("error_message")
+        ), jobExecutionId, Math.max(1, limit));
+    }
+
     private void upsertFoodNutrition(FoodNutritionUpsert food) {
         jdbcTemplate.update("""
                 INSERT INTO food_nutrition (

@@ -22,11 +22,13 @@ public class NutritionImportJobConfig {
     Job nutritionImportJob(JobRepository jobRepository,
                            Step nutritionStageStep,
                            Step nutritionNormalizeUpsertStep,
-                           Step nutritionImportReportStep) {
+                           Step nutritionImportReportStep,
+                           Step nutritionImportPdfReportStep) {
         return new JobBuilder("nutritionImportJob", jobRepository)
                 .start(nutritionStageStep)
                 .next(nutritionNormalizeUpsertStep)
                 .next(nutritionImportReportStep)
+                .next(nutritionImportPdfReportStep)
                 .build();
     }
 
@@ -69,6 +71,16 @@ public class NutritionImportJobConfig {
                                    NutritionImportReportTasklet nutritionImportReportTasklet) {
         return new StepBuilder("nutritionImportReportStep", jobRepository)
                 .tasklet(nutritionImportReportTasklet, transactionManager)
+                .build();
+    }
+
+    @Bean
+    @JobScope
+    Step nutritionImportPdfReportStep(JobRepository jobRepository,
+                                      PlatformTransactionManager transactionManager,
+                                      NutritionImportPdfReportTasklet nutritionImportPdfReportTasklet) {
+        return new StepBuilder("nutritionImportPdfReportStep", jobRepository)
+                .tasklet(nutritionImportPdfReportTasklet, transactionManager)
                 .build();
     }
 
@@ -118,6 +130,15 @@ public class NutritionImportJobConfig {
             @Value("#{jobParameters['sourcePath']}") String sourcePath,
             @Value("#{jobParameters['sourceName']}") String sourceName) {
         return new NutritionImportReportTasklet(repository, sourceName(sourcePath, sourceName), sourcePath);
+    }
+
+    @Bean
+    @StepScope
+    NutritionImportPdfReportTasklet nutritionImportPdfReportTasklet(
+            NutritionImportRepository repository,
+            @Value("#{jobParameters['sourcePath']}") String sourcePath,
+            @Value("#{jobParameters['sourceName']}") String sourceName) {
+        return new NutritionImportPdfReportTasklet(repository, sourceName(sourcePath, sourceName), sourcePath);
     }
 
     private static int chunkSize(String value) {

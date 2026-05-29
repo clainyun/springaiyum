@@ -70,6 +70,7 @@ public class NutritionBatchApiController {
         body.put("executionId", executionId);
         body.put("status", execution == null ? "UNKNOWN" : execution.getStatus().name());
         body.put("sourceName", parameters.getProperty("sourceName"));
+        body.put("pdfReportPath", "reports/batch/nutrition/nutrition-import-" + executionId + ".pdf");
         return ResponseEntity.accepted().body(body);
     }
 
@@ -88,6 +89,7 @@ public class NutritionBatchApiController {
         body.put("executionId", restartedExecutionId);
         body.put("status", execution == null ? "UNKNOWN" : execution.getStatus().name());
         body.put("restartedFrom", executionId);
+        body.put("pdfReportPath", "reports/batch/nutrition/nutrition-import-" + restartedExecutionId + ".pdf");
         return ResponseEntity.accepted().body(body);
     }
 
