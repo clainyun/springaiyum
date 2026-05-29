@@ -21,10 +21,10 @@ INSERT INTO users (
     user_id, email, password, nickname, gender, birth_year,
     height, weight, goal, health_note, active, created_at, updated_at
 ) VALUES
-('user_demo', 'demo@yamyam.com', 'Demo1234!', '데모 사용자', 'male', 1996, 176.00, 72.00, 'health', '균형 잡힌 식단과 꾸준한 기록이 목표입니다.', TRUE, '2026-05-01 09:00:00', '2026-05-06 18:10:00'),
-('user_mina', 'mina@yamyam.com', 'Demo1234!', '민아', 'female', 1998, 164.00, 55.00, 'diet', '야식과 당류 섭취를 줄이는 중입니다.', TRUE, '2026-05-01 09:10:00', '2026-05-06 19:10:00'),
-('user_joon', 'joon@yamyam.com', 'Demo1234!', '준호', 'male', 1994, 181.00, 81.00, 'muscle', '운동 후 단백질 보충을 중요하게 생각합니다.', TRUE, '2026-05-01 09:20:00', '2026-05-06 20:10:00'),
-('user_hana', 'hana@yamyam.com', 'Demo1234!', '하나', 'female', 1997, 168.00, 60.00, 'health', '자극적인 음식은 피하고 가볍게 먹는 편입니다.', TRUE, '2026-05-01 09:30:00', '2026-05-06 16:40:00')
+('user_demo', 'demo@yumyum.com', 'Demo1234!', '데모 사용자', 'male', 1996, 176.00, 72.00, 'health', '균형 잡힌 식단과 꾸준한 기록이 목표입니다.', TRUE, '2026-05-01 09:00:00', '2026-05-06 18:10:00'),
+('user_mina', 'mina@yumyum.com', 'Demo1234!', '민아', 'female', 1998, 164.00, 55.00, 'diet', '야식과 당류 섭취를 줄이는 중입니다.', TRUE, '2026-05-01 09:10:00', '2026-05-06 19:10:00'),
+('user_joon', 'joon@yumyum.com', 'Demo1234!', '준호', 'male', 1994, 181.00, 81.00, 'muscle', '운동 후 단백질 보충을 중요하게 생각합니다.', TRUE, '2026-05-01 09:20:00', '2026-05-06 20:10:00'),
+('user_hana', 'hana@yumyum.com', 'Demo1234!', '하나', 'female', 1997, 168.00, 60.00, 'health', '자극적인 음식은 피하고 가볍게 먹는 편입니다.', TRUE, '2026-05-01 09:30:00', '2026-05-06 16:40:00')
 ON DUPLICATE KEY UPDATE
     email = VALUES(email),
     password = VALUES(password),
