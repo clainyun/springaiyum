@@ -88,6 +88,10 @@ Swagger UI:
 http://localhost:8080/swagger-ui/index.html
 ```
 
+실행 결과:
+
+![](./assets/ssafy_yumyumcoach.png)
+
 ### 실행 조건과 로그인
 
 - 애플리케이션과 MySQL이 실행 중이어야 합니다.
