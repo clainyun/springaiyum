@@ -23,7 +23,7 @@ USE ssafy_yumyumcoach;
 -- F110 로그인/로그아웃
 -- ------------------------------
 CREATE TABLE IF NOT EXISTS users (
-    user_id      INT AUTO_INCREMENT PRIMARY KEY COMMENT '회원 PK',
+    user_id      VARCHAR(64) PRIMARY KEY COMMENT '회원 PK',
     email        VARCHAR(100) NOT NULL UNIQUE COMMENT '이메일',
     password     VARCHAR(100) NOT NULL COMMENT '비밀번호',
     nickname     VARCHAR(50)  NOT NULL COMMENT '닉네임',
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS food_nutrition (
 -- ------------------------------
 CREATE TABLE IF NOT EXISTS diet_logs (
     diet_log_id   INT AUTO_INCREMENT PRIMARY KEY COMMENT '식단로그 PK',
-    user_id       INT NOT NULL COMMENT 'FK: users.user_id',
+    user_id       VARCHAR(64) NOT NULL COMMENT 'FK: users.user_id',
     log_date      DATETIME NOT NULL COMMENT '식단 기록 일시',
     meal_type     VARCHAR(20) NULL COMMENT '식사 유형(아침/점심/저녁/간식)',
     total_calorie DECIMAL(10,2) NULL COMMENT '총 칼로리(옵션)',
@@ -128,9 +128,9 @@ INSERT INTO users (
     user_id, email, password, nickname, gender, birth_year,
     height, weight, goal, health_note, active
 ) VALUES
-(1, 'demo@yumyam.com', 'Demo1234!', '데모 사용자', 'FEMALE', 1999, 165.0, 55.0, 'health', '단백질 섭취를 늘리고 싶음', TRUE),
-(2, 'mina@yumyam.com', '1234', '민아', 'FEMALE', 1998, 162.0, 54.0, 'diet', '저녁 식단 관리 필요', TRUE),
-(3, 'joon@yumyam.com', '1234', '준호', 'MALE', 1997, 176.0, 72.0, 'muscle', '단백질 목표 달성', TRUE)
+('user_demo', 'demo@yumyam.com', 'Demo1234!', '데모 사용자', 'FEMALE', 1999, 165.0, 55.0, 'health', '단백질 섭취를 늘리고 싶음', TRUE),
+('user_mina', 'mina@yumyam.com', '1234', '민아', 'FEMALE', 1998, 162.0, 54.0, 'diet', '저녁 식단 관리 필요', TRUE),
+('user_joon', 'joon@yumyam.com', '1234', '준호', 'MALE', 1997, 176.0, 72.0, 'muscle', '단백질 목표 달성', TRUE)
 ON DUPLICATE KEY UPDATE
     email = VALUES(email),
     password = VALUES(password),
@@ -175,9 +175,9 @@ ON DUPLICATE KEY UPDATE
 INSERT INTO diet_logs (
     diet_log_id, user_id, log_date, meal_type, total_calorie, memo, image_url
 ) VALUES
-(1, 1, '2026-04-24 08:00:00', '아침', 472.00, '오전에 포만감을 유지하는 아침 식단입니다.', NULL),
-(2, 1, '2026-04-24 12:30:00', '점심', 461.00, '채소와 단백질을 같이 챙긴 점심입니다.', NULL),
-(3, 1, '2026-04-23 18:30:00', '저녁', 200.00, '회복을 고려한 가벼운 저녁입니다.', NULL)
+(1, 'user_demo', '2026-04-24 08:00:00', '아침', 472.00, '오전에 포만감을 유지하는 아침 식단입니다.', NULL),
+(2, 'user_demo', '2026-04-24 12:30:00', '점심', 461.00, '채소와 단백질을 같이 챙긴 점심입니다.', NULL),
+(3, 'user_demo', '2026-04-23 18:30:00', '저녁', 200.00, '회복을 고려한 가벼운 저녁입니다.', NULL)
 ON DUPLICATE KEY UPDATE
     user_id = VALUES(user_id),
     log_date = VALUES(log_date),

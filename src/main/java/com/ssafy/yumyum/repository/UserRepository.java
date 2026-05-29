@@ -1,8 +1,6 @@
 package com.ssafy.yumyum.repository;
 
-import org.springframework.stereotype.Repository;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,6 +10,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import org.springframework.stereotype.Repository;
 
 import com.ssafy.yumyum.model.User;
 import com.ssafy.yumyum.util.DBUtil;
@@ -39,11 +39,8 @@ public class UserRepository {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """;
 
-    private final boolean numericUserId;
-
     public UserRepository(List<User> seedUsers) {
         initializeSchema();
-        this.numericUserId = isNumericUserIdColumn();
         seedIfEmpty(seedUsers == null ? List.of() : seedUsers);
     }
 
@@ -67,7 +64,7 @@ public class UserRepository {
                 users.add(mapUser(resultSet));
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("사용자 목록을 조회하지 못했습니다.", e);
+            throw new IllegalStateException("Could not load users.", e);
         }
         return users;
     }
@@ -87,7 +84,7 @@ public class UserRepository {
                 return resultSet.next() ? mapUser(resultSet) : null;
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("사용자 정보를 조회하지 못했습니다.", e);
+            throw new IllegalStateException("Could not load user.", e);
         }
     }
 
@@ -106,17 +103,12 @@ public class UserRepository {
                 return resultSet.next() ? mapUser(resultSet) : null;
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("이메일로 사용자를 조회하지 못했습니다.", e);
+            throw new IllegalStateException("Could not load user by email.", e);
         }
     }
 
     public synchronized void save(User user) {
         Objects.requireNonNull(user, "user must not be null");
-
-        if (numericUserId) {
-            saveWithGeneratedId(user);
-            return;
-        }
 
         String sql = """
             INSERT INTO users (
@@ -160,55 +152,7 @@ public class UserRepository {
 
             user.setCreatedAt(createdAt);
         } catch (SQLException e) {
-            throw new IllegalStateException("사용자 정보를 저장하지 못했습니다.", e);
-        }
-    }
-
-    private void saveWithGeneratedId(User user) {
-        String sql = """
-            INSERT INTO users (
-                email, password, nickname, gender, birth_year, height, weight,
-                goal, health_note, active, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-                password = VALUES(password),
-                nickname = VALUES(nickname),
-                gender = VALUES(gender),
-                birth_year = VALUES(birth_year),
-                height = VALUES(height),
-                weight = VALUES(weight),
-                goal = VALUES(goal),
-                health_note = VALUES(health_note),
-                active = VALUES(active),
-                updated_at = VALUES(updated_at)
-            """;
-
-        LocalDateTime createdAt = user.getCreatedAt() == null ? LocalDateTime.now() : user.getCreatedAt();
-        LocalDateTime updatedAt = LocalDateTime.now();
-
-        try (Connection connection = DBUtil.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, user.getEmail());
-            statement.setString(2, user.getPassword());
-            statement.setString(3, user.getNickname());
-            statement.setString(4, user.getGender());
-            statement.setInt(5, user.getBirthYear());
-            statement.setDouble(6, user.getHeight());
-            statement.setDouble(7, user.getWeight());
-            statement.setString(8, user.getGoal());
-            statement.setString(9, user.getHealthNote());
-            statement.setBoolean(10, user.isActive());
-            statement.setTimestamp(11, Timestamp.valueOf(createdAt));
-            statement.setTimestamp(12, Timestamp.valueOf(updatedAt));
-            statement.executeUpdate();
-
-            User saved = findByEmail(user.getEmail());
-            if (saved != null) {
-                user.setId(saved.getId());
-            }
-            user.setCreatedAt(createdAt);
-        } catch (SQLException e) {
-            throw new IllegalStateException("사용자 정보를 저장하지 못했습니다.", e);
+            throw new IllegalStateException("Could not save user.", e);
         }
     }
 
@@ -220,7 +164,7 @@ public class UserRepository {
             statement.setString(1, userId);
             statement.executeUpdate();
         } catch (SQLException e) {
-            throw new IllegalStateException("사용자 정보를 삭제하지 못했습니다.", e);
+            throw new IllegalStateException("Could not delete user.", e);
         }
     }
 
@@ -229,23 +173,8 @@ public class UserRepository {
              Statement statement = connection.createStatement()) {
             statement.executeUpdate(CREATE_USERS_SQL);
         } catch (SQLException e) {
-            throw new IllegalStateException("UserRepository 테이블을 초기화하지 못했습니다.", e);
+            throw new IllegalStateException("Could not initialize users table.", e);
         }
-    }
-
-    private boolean isNumericUserIdColumn() {
-        try (Connection connection = DBUtil.getConnection()) {
-            DatabaseMetaData metaData = connection.getMetaData();
-            try (ResultSet columns = metaData.getColumns(connection.getCatalog(), null, "users", "user_id")) {
-                if (columns.next()) {
-                    String typeName = columns.getString("TYPE_NAME");
-                    return typeName != null && typeName.toUpperCase().contains("INT");
-                }
-            }
-        } catch (SQLException e) {
-            throw new IllegalStateException("users.user_id 컬럼 정보를 확인하지 못했습니다.", e);
-        }
-        return false;
     }
 
     private void seedIfEmpty(List<User> seedUsers) {
@@ -260,7 +189,7 @@ public class UserRepository {
                 return;
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("users 테이블 상태를 확인하지 못했습니다.", e);
+            throw new IllegalStateException("Could not inspect users table.", e);
         }
 
         for (User seedUser : seedUsers) {

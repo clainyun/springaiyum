@@ -24,7 +24,7 @@ USE `ssafy_yumyumcoach` ;
 DROP TABLE IF EXISTS `ssafy_yumyumcoach`.`users` ;
 
 CREATE TABLE IF NOT EXISTS `ssafy_yumyumcoach`.`users` (
-  `user_id` INT NOT NULL AUTO_INCREMENT COMMENT '회원 PK',
+  `user_id` VARCHAR(64) NOT NULL COMMENT '회원 PK',
   `email` VARCHAR(100) NOT NULL COMMENT '이메일',
   `password` VARCHAR(100) NOT NULL COMMENT '비밀번호',
   `nickname` VARCHAR(50) NOT NULL COMMENT '닉네임',
@@ -40,7 +40,6 @@ CREATE TABLE IF NOT EXISTS `ssafy_yumyumcoach`.`users` (
   PRIMARY KEY (`user_id`),
   UNIQUE INDEX `email` (`email` ASC) VISIBLE)
 ENGINE = InnoDB
-AUTO_INCREMENT = 4
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci
 COMMENT = '회원 정보 테이블';
@@ -53,7 +52,7 @@ DROP TABLE IF EXISTS `ssafy_yumyumcoach`.`diet_logs` ;
 
 CREATE TABLE IF NOT EXISTS `ssafy_yumyumcoach`.`diet_logs` (
   `diet_log_id` INT NOT NULL AUTO_INCREMENT COMMENT '식단로그 PK',
-  `user_id` INT NOT NULL COMMENT 'FK: users.user_id',
+  `user_id` VARCHAR(64) NOT NULL COMMENT 'FK: users.user_id',
   `log_date` DATETIME NOT NULL COMMENT '식단 기록 일시',
   `meal_type` VARCHAR(20) NULL DEFAULT NULL COMMENT '식사 유형(아침/점심/저녁/간식)',
   `total_calorie` DECIMAL(10,2) NULL DEFAULT NULL COMMENT '총 칼로리(옵션)',
