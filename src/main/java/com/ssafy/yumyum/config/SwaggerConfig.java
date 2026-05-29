@@ -21,15 +21,7 @@ public class SwaggerConfig {
     GroupedOpenApi yumyumApi() {
         return GroupedOpenApi.builder()
             .group("yumyum-api")
-            .pathsToMatch("/api/v1/**")
-            .build();
-    }
-
-    @Bean
-    GroupedOpenApi batchApi() {
-        return GroupedOpenApi.builder()
-            .group("batch-api")
-            .pathsToMatch("/batch/**")
+            .pathsToMatch("/api/v1/**", "/batch/**")
             .build();
     }
 }
