@@ -68,7 +68,7 @@ v1에서는 `food_nutrition`에 맞는 영양 데이터만 적재한다. `전북
    - 로그에 `jobExecutionId`, `sourceName`, `total`, `success`, `failed` 출력한다.
 
 6. 실행 API
-   - `GET /batch/nutrition-import?sourcePath=...&sourceName=...&chunkSize=100&runTime=...`
+   - `GET /batch/nutrition-import?sourcePath=...&sourceName=...&chunkSize=100&runId=...`
    - `JobOperator.start("nutritionImportJob", params)` 사용
    - 응답은 execution id와 status만 반환한다.
    - 실패한 동일 JobInstance 재시작은 기존 `JobOperator.restart(...)` 패턴을 따른다.

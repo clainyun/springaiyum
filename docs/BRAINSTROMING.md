@@ -651,7 +651,7 @@ Processor에서는 API 응답을 staging/final 저장용 DTO로 바꾼다.
 jobName=cnAfterSchoolFoodCalorieApiImportJob
 serviceKey={공공데이터포털_SERVICE_KEY}
 perPage=10
-runTime=20260529150000
+runId=20260529150000
 ```
 
 학습 중에는 `perPage=5`나 `perPage=10`처럼 작게 두는 것이 좋다. 그래야 여러 번 API를 호출하고, chunk commit과 page 이동을 로그로 확인하기 쉽다.
@@ -662,7 +662,7 @@ runTime=20260529150000
 
 - `failAtPage=3` JobParameter를 추가해 3페이지에서 예외 발생
 - 재시작 시 이미 staging에 들어간 page row는 unique key로 중복 방지
-- `runTime`을 빼고 같은 JobParameter로 재실행해 Spring Batch의 JobInstance 중복 제약 확인
+- `runId`를 빼고 같은 JobParameter로 재실행해 Spring Batch의 JobInstance 중복 제약 확인
 - API 401/500 응답을 만났을 때 retry 또는 실패 처리
 - serviceKey 누락 시 명확한 실패 메시지 기록
 

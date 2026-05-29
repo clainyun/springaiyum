@@ -44,7 +44,9 @@ public class NutritionBatchApiController {
             @RequestParam(required = false) String sourceName,
             @Parameter(description = "청크 크기. 1~500 사이로 보정됩니다.", example = "100")
             @RequestParam(defaultValue = "100") int chunkSize,
-            @Parameter(description = "JobInstance 식별용 실행 값. 생략하면 현재 시간을 사용합니다.", example = "manual-20260529-001")
+            @Parameter(description = "JobInstance 식별용 실행 ID. 생략하면 현재 시간을 사용합니다.", example = "manual-20260529-001")
+            @RequestParam(required = false) String runId,
+            @Parameter(description = "이전 호환용 파라미터입니다. runId 사용을 권장합니다.", deprecated = true)
             @RequestParam(required = false) String runTime) throws Exception {
 
         Path path = Path.of(sourcePath);
@@ -59,9 +61,10 @@ public class NutritionBatchApiController {
         parameters.setProperty("sourcePath", path.toString());
         parameters.setProperty("sourceName", sourceName(path, sourceName));
         parameters.setProperty("chunkSize", String.valueOf(Math.max(1, Math.min(chunkSize, 500))));
-        parameters.setProperty("runTime", runTime == null || runTime.isBlank()
+        String resolvedRunId = resolveRunId(runId, runTime);
+        parameters.setProperty("runId", resolvedRunId == null || resolvedRunId.isBlank()
                 ? String.valueOf(System.currentTimeMillis())
-                : runTime);
+                : resolvedRunId);
 
         long executionId = jobOperator.start("nutritionImportJob", parameters);
         JobExecution execution = jobExplorer.getJobExecution(executionId);
@@ -96,5 +99,12 @@ public class NutritionBatchApiController {
             return sourceName;
         }
         return sourcePath.getFileName().toString();
+    }
+
+    private static String resolveRunId(String runId, String runTime) {
+        if (runId != null && !runId.isBlank()) {
+            return runId;
+        }
+        return runTime;
     }
 }
