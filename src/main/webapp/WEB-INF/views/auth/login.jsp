@@ -20,15 +20,16 @@ if (emailValue == null) {
     </section>
     <section class="auth-form-panel">
       <h2 class="fw-bold mb-3">로그인</h2>
-      <p class="subtle-text">데모 계정으로 바로 확인할 수 있습니다. `demo@yumyum.com / Demo1234!`</p>
+      <p class="subtle-text">데모 계정으로 바로 확인할 수 있습니다.</p>
       <form method="post" action="<%= request.getContextPath() %>/auth/login" class="mt-4">
         <div class="mb-3">
           <label class="form-label fw-semibold" for="email">이메일</label>
-          <input class="form-control" type="email" id="email" name="email" value="<%= emailValue %>" required>
+          <!-- <input class="form-control" type="email" id="email" name="email" value="<%= emailValue %>" required> -->
+          <input class="form-control" type="email" id="email" name="email" value="demo@yamyam.com" required>
         </div>
         <div class="mb-3">
           <label class="form-label fw-semibold" for="password">비밀번호</label>
-          <input class="form-control" type="password" id="password" name="password" required>
+          <input class="form-control" type="password" id="password" name="password" value="Demo1234!" required>
         </div>
         <button class="btn btn-success w-100" type="submit">로그인</button>
       </form>
