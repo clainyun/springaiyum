@@ -7,14 +7,11 @@
 
 YumYumCoach 프로젝트의 기존 JSP 사용자 화면을 **Vue 3 + Vite SPA**로 전환한 버전입니다.
 
-기존 README가 Spring Batch 기반 영양성분 데이터 적재 기능을 중심으로 설명했다면, 이 README는 `origin/master` 이후 `vueyum`에서 진행한 JSP 화면의 Vue 전환, REST API 보강, Spring 정적 리소스 연동, 개발/배포 실행 구조 변경을 중심으로 정리합니다.
-
-> [!NOTE]
-> - 커뮤니티 기능이 이번 관통 PJT의 게시판 구현 요구사항에 대응합니다.
-> - 기존 JSP로 구현된 프론트를 Vue.js 로 포팅하였습니다.
-> - Docker Compose 를 구성해두었으니, compose 를 실행하면 서비스가 바로 실행됩니다.
->   - MySQL 워크벤치 없이 mysql 이미지로 데이터베이스 서버를 구성하오니, 포트 충돌에 주의해야합니다.
->   - Dockerfile을 이용한 Spring Boot 어플리케이션 이미지 구성 전, Multi-stage build로 Vue.js 프로젝트를 빌드하여 Spring Boot App 의 static 폴더에서 배치하여 런타임에 SPA를 서빙하는 형태입니다.
+- 커뮤니티 기능이 이번 관통 PJT의 게시판 구현 요구사항에 대응합니다.
+- 기존 JSP로 구현된 프론트를 Vue.js 로 포팅하였습니다.
+- Docker Compose 를 구성해두었으니, compose 를 실행하면 서비스가 바로 실행됩니다.
+  - MySQL 워크벤치 없이 mysql 이미지로 데이터베이스 서버를 구성하오니, 포트 충돌에 주의해야합니다.
+  - Dockerfile을 이용한 Spring Boot 어플리케이션 이미지 구성 전, Multi-stage build로 Vue.js 프로젝트를 빌드하여 Spring Boot App 의 static 폴더에서 배치하여 런타임에 SPA를 서빙하는 형태입니다.
 
 ## 프로젝트 개요
 
