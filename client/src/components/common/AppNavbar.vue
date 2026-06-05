@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useLogoutApi } from '@/composables/useAuthApis'
 import { useSessionStore } from '@/stores/session'
 
 const route = useRoute()
+const router = useRouter()
 const sessionStore = useSessionStore()
+const logoutApi = useLogoutApi()
 
 const activeNav = computed(() => {
   const name = String(route.name || '')
@@ -22,6 +25,16 @@ const activeNav = computed(() => {
 
 function navClass(key: string) {
   return ['nav-link', activeNav.value === key ? 'active fw-semibold' : '']
+}
+
+async function logout() {
+  try {
+    await logoutApi.execute()
+  } finally {
+    sessionStore.clearLoginUser()
+    sessionStore.setAlert('로그아웃되었습니다.', 'success')
+    await router.push({ name: 'login' })
+  }
 }
 </script>
 
@@ -73,7 +86,14 @@ function navClass(key: string) {
               </RouterLink>
             </li>
             <li class="nav-item">
-              <button class="btn btn-outline-light btn-sm" type="button">로그아웃</button>
+              <button
+                class="btn btn-outline-light btn-sm"
+                type="button"
+                :disabled="logoutApi.isLoading.value"
+                @click="logout"
+              >
+                로그아웃
+              </button>
             </li>
           </template>
           <template v-else>
