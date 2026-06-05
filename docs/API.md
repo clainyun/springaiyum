@@ -5,8 +5,8 @@
 - 기본 주소: `http://localhost:8080`
 - 인증 방식: 세션 기반 로그인
 - 세션 키: `loginUserId`
-- 뷰 반환: 대부분 JSP View 또는 Redirect
-- JSON 반환: `GET /coach/dashboard`만 JSON 응답
+- 뷰 반환: 기존 Spring MVC 컨트롤러는 JSP View 또는 Redirect
+- JSON 반환: Vue SPA 전환을 위해 `/api/v1/**` REST API가 확장됨
 - `PATCH`, `DELETE`는 `spring.mvc.hiddenmethod.filter.enabled=true` 설정에 따라 HTML form의 hidden `_method` 방식 사용 가능
 
 ### 1.1 인증 정책
@@ -232,7 +232,49 @@
 | `follow` | 대상 사용자 팔로우 |
 | `unfollow` | 대상 사용자 언팔로우 |
 
-## 10. 예외 및 오류 응답
+## 10. Vue SPA REST API
+
+Vue SPA는 세션 쿠키 기반으로 다음 JSON API를 사용한다.
+
+| Method | Path | 설명 |
+| --- | --- | --- |
+| POST | `/api/v1/auth/login` | 로그인 후 세션 생성 |
+| POST | `/api/v1/auth/signup` | 회원가입 후 세션 생성 |
+| POST | `/api/v1/auth/logout` | 세션 종료 |
+| GET | `/api/v1/users/me` | 내 프로필 조회 |
+| GET | `/api/v1/users/me/dashboard` | 프로필 화면용 목표/활동 통계 조회 |
+| PUT | `/api/v1/users/me` | 내 프로필 수정 |
+| POST | `/api/v1/users/me/deactivate` | 내 계정 비활성화 |
+| DELETE | `/api/v1/users/me` | 내 계정 영구 삭제 |
+| GET | `/api/v1/meals` | 내 식단 목록 조회 |
+| GET | `/api/v1/meals/{mealId}` | 식단 상세, 분석, 일일 목표 조회 |
+| POST | `/api/v1/meals` | 식단 생성 |
+| PUT | `/api/v1/meals/{mealId}` | 식단 수정 |
+| DELETE | `/api/v1/meals/{mealId}` | 식단 삭제 |
+| GET | `/api/v1/foods?keyword=...` | 음식 검색 |
+| GET | `/api/v1/dashboard/home` | 홈 대시보드 조회 |
+| GET | `/api/v1/coach/dashboard` | 코치 대시보드 조회 |
+| GET | `/api/v1/community?category=...` | 커뮤니티 게시글/댓글 목록 조회 |
+| POST | `/api/v1/community/posts` | 게시글 작성 |
+| PATCH | `/api/v1/community/posts/{postId}` | 게시글 수정 |
+| DELETE | `/api/v1/community/posts/{postId}` | 게시글 삭제 |
+| POST | `/api/v1/community/posts/{postId}/comments` | 댓글 작성 |
+| PATCH | `/api/v1/community/comments/{commentId}` | 댓글 수정 |
+| DELETE | `/api/v1/community/comments/{commentId}` | 댓글 삭제 |
+| GET | `/api/v1/challenges` | 챌린지 보드 조회 |
+| POST | `/api/v1/challenges` | 챌린지 생성 |
+| POST | `/api/v1/challenges/{challengeId}/memberships` | 챌린지 참여 |
+| PATCH | `/api/v1/challenges/{challengeId}/memberships/me` | 내 진행률 수정 |
+| DELETE | `/api/v1/challenges/{challengeId}/memberships/me` | 챌린지 탈퇴 |
+| DELETE | `/api/v1/challenges/{challengeId}` | 내가 만든 챌린지 삭제 |
+| GET | `/api/v1/social` | 소셜 대시보드 조회 |
+| POST | `/api/v1/social/following/{targetUserId}` | 팔로우 |
+| DELETE | `/api/v1/social/following/{targetUserId}` | 언팔로우 |
+| GET | `/api/v1/health` | API 상태 확인 |
+
+개발 중 `client` Vite 서버는 `/api`, `/batch`, `/swagger-ui`, `/v3/api-docs`를 Spring Boot 서버(`http://localhost:8080`)로 proxy한다.
+
+## 11. 예외 및 오류 응답
 
 ### 화면 오류
 
@@ -249,7 +291,6 @@
 - 일반 화면 요청은 오류 화면 렌더링
 - 일부 컨트롤러는 예외 대신 플래시 메시지 + 리다이렉트 처리
 
-## 11. 빠른 요약
+## 12. 빠른 요약
 
-이 프로젝트의 엔드포인트는 대부분 서버 렌더링 중심이고, REST JSON API는 거의 없다.  
-실질적인 JSON API는 `GET /coach/dashboard` 하나이며, 나머지는 JSP 화면과 폼 전송 흐름에 맞춰 설계되어 있다.
+이 프로젝트는 기존 JSP 화면/폼 컨트롤러를 유지하면서, `client` Vue SPA가 같은 기능을 사용할 수 있도록 `/api/v1/**` REST API를 확장한 상태다.
