@@ -1,3 +1,18 @@
+FROM node:24-alpine AS client-build
+
+WORKDIR /workspace/client
+
+ENV PNPM_HOME=/pnpm
+ENV PATH="$PNPM_HOME:$PATH"
+
+RUN corepack enable && corepack prepare pnpm@11.5.0 --activate
+
+COPY client/package.json client/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+COPY client ./
+RUN pnpm build
+
 FROM maven:3.9.11-eclipse-temurin-21 AS build
 
 WORKDIR /workspace
@@ -6,6 +21,7 @@ COPY pom.xml .
 RUN mvn -DskipTests dependency:go-offline
 
 COPY src ./src
+COPY --from=client-build /workspace/src/main/resources/static ./src/main/resources/static
 RUN mvn -DskipTests package
 
 FROM eclipse-temurin:21-jre

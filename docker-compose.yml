@@ -38,18 +38,3 @@ services:
       database:
         condition: service_healthy
     restart: unless-stopped
-
-  client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-    image: vueyum-client:latest
-    container_name: vueyum-client
-    environment:
-      VITE_PROXY_TARGET: http://server:8080
-      TZ: Asia/Seoul
-    ports:
-      - "5173:5173"
-    depends_on:
-      - server
-    restart: unless-stopped
