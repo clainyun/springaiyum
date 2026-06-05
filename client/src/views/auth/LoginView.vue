@@ -8,7 +8,7 @@ const router = useRouter()
 const sessionStore = useSessionStore()
 const loginApi = useLoginApi()
 
-const email = ref('demo@yamyam.com')
+const email = ref('demo@yumyum.com')
 const password = ref('Demo1234!')
 
 async function submitLogin() {
