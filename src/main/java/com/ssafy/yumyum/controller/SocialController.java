@@ -24,12 +24,12 @@ import java.util.Map;
 import java.util.Set;
 
 @Controller
-@RequestMapping("/social")
+@RequestMapping("/legacy/social")
 public class SocialController {
 
-    private static final String LOGIN_REDIRECT = "redirect:/auth/login";
+    private static final String LOGIN_REDIRECT = "redirect:/legacy/auth/login";
     private static final String SOCIAL_INDEX_VIEW = "social/index";
-    private static final String SOCIAL_REDIRECT = "redirect:/social";
+    private static final String SOCIAL_REDIRECT = "redirect:/legacy/social";
 
     private final UserService userService;
     private final SocialService socialService;

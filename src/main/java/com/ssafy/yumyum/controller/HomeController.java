@@ -46,7 +46,7 @@ public class HomeController {
         this.socialService = socialService;
     }
 
-    @GetMapping({"/", "/home"})
+    @GetMapping({"/legacy", "/legacy/home"})
     public String home(HttpServletRequest request, Model model) {
         User user = getLoginUser(request);
 

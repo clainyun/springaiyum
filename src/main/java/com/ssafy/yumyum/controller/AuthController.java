@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
-@RequestMapping("/auth")
+@RequestMapping("/legacy/auth")
 public class AuthController {
 
     private final AuthService authService;
@@ -28,7 +28,7 @@ public class AuthController {
     @GetMapping("/login")
     public String loginForm(HttpServletRequest request, Model model) {
         if (SessionUtils.currentUserId(request) != null) {
-            return "redirect:/home";
+            return "redirect:/legacy/home";
         }
 
         model.addAttribute("pageTitle", "로그인");
@@ -61,13 +61,13 @@ public class AuthController {
                 "환영합니다, " + result.getData().getNickname() + "님."
         );
 
-        return "redirect:/home";
+        return "redirect:/legacy/home";
     }
 
     @GetMapping("/signup")
     public String signupForm(HttpServletRequest request, Model model) {
         if (SessionUtils.currentUserId(request) != null) {
-            return "redirect:/home";
+            return "redirect:/legacy/home";
         }
 
         model.addAttribute("pageTitle", "회원가입");
@@ -106,7 +106,7 @@ public class AuthController {
         SessionUtils.login(request.getSession(), result.getData().getId());
         SessionUtils.flash(request.getSession(), "success", "회원가입이 완료되었습니다.");
 
-        return "redirect:/home";
+        return "redirect:/legacy/home";
     }
 
     @GetMapping("/logout")
@@ -116,7 +116,7 @@ public class AuthController {
         HttpSession session = request.getSession(true);
         SessionUtils.flash(session, "success", "로그아웃되었습니다.");
 
-        return "redirect:/auth/login";
+        return "redirect:/legacy/auth/login";
     }
 
     private int parseInt(String raw, int fallback) {

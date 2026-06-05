@@ -112,9 +112,12 @@ public class LoginCheckFilter implements Filter {
     }
 
     private boolean isPublicPath(String path) {
-        return path.equals("/auth/login")
+        return isSpaRoute(path)
+                || path.equals("/auth/login")
                 || path.equals("/auth/signup")
                 || path.equals("/auth/logout")
+                || path.equals("/index.html")
+                || path.startsWith("/legacy/auth/")
                 || path.equals("/api/v1/auth/login")
                 || path.equals("/api/v1/auth/signup")
                 || path.equals("/api/v1/auth/logout")
@@ -131,5 +134,21 @@ public class LoginCheckFilter implements Filter {
                 || path.startsWith("/webjars/")
                 || path.equals("/favicon.ico")
                 || path.equals("/error");
+    }
+
+    private boolean isSpaRoute(String path) {
+        return path.equals("/")
+                || path.equals("/home")
+                || path.equals("/auth/login")
+                || path.equals("/auth/signup")
+                || path.equals("/meals")
+                || path.equals("/meals/detail")
+                || path.equals("/meals/new")
+                || path.equals("/meals/edit")
+                || path.equals("/profile")
+                || path.equals("/coach")
+                || path.equals("/community")
+                || path.equals("/challenges")
+                || path.equals("/social");
     }
 }

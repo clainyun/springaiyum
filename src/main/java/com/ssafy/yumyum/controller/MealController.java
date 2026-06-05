@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 @Controller
-@RequestMapping("/meals")
+@RequestMapping("/legacy/meals")
 public class MealController {
 
     private final MealService mealService;
@@ -81,7 +81,7 @@ public class MealController {
 
         if (meal == null || !user.getId().equals(meal.getUserId())) {
             SessionUtils.flash(request.getSession(), "warning", "식단을 찾을 수 없습니다.");
-            return "redirect:/meals";
+            return "redirect:/legacy/meals";
         }
 
         MealAnalysis analysis = mealService.analyzeMeal(meal, user);
@@ -121,7 +121,7 @@ public class MealController {
 
         if (meal == null || !user.getId().equals(meal.getUserId())) {
             SessionUtils.flash(request.getSession(), "warning", "식단을 찾을 수 없습니다.");
-            return "redirect:/meals";
+            return "redirect:/legacy/meals";
         }
 
         return renderForm(user, true, meal, keyword, null, model);
@@ -153,7 +153,7 @@ public class MealController {
 
         SessionUtils.flash(request.getSession(), "success", result.getMessage());
 
-        return "redirect:/meals";
+        return "redirect:/legacy/meals";
     }
 
     @PostMapping("/edit")
@@ -190,7 +190,7 @@ public class MealController {
 
         SessionUtils.flash(request.getSession(), "success", result.getMessage());
 
-        return "redirect:/meals/detail?mealId=" + result.getData().getId();
+        return "redirect:/legacy/meals/detail?mealId=" + result.getData().getId();
     }
 
     @PostMapping("/delete")
@@ -202,7 +202,7 @@ public class MealController {
         mealService.deleteMeal(user, mealId);
         SessionUtils.flash(request.getSession(), "success", "식단을 삭제했습니다.");
 
-        return "redirect:/meals";
+        return "redirect:/legacy/meals";
     }
 
     private String renderForm(User user,

@@ -28,11 +28,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
-@RequestMapping("/challenges")
+@RequestMapping("/legacy/challenges")
 public class ChallengeController {
 
     private static final String CHALLENGE_INDEX_VIEW = "challenge/index";
-    private static final String CHALLENGES_REDIRECT = "redirect:/challenges";
+    private static final String CHALLENGES_REDIRECT = "redirect:/legacy/challenges";
 
     private final ChallengeService challengeService;
 

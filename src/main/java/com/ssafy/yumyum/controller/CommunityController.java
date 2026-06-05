@@ -28,10 +28,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
-@RequestMapping("/community")
+@RequestMapping("/legacy/community")
 public class CommunityController {
 
-    private static final String COMMUNITY_REDIRECT = "redirect:/community";
+    private static final String COMMUNITY_REDIRECT = "redirect:/legacy/community";
     private static final String COMMUNITY_INDEX_VIEW = "community/index";
 
     private final CommunityService communityService;

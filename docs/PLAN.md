@@ -306,7 +306,7 @@ feat(social): 소셜 화면과 API를 Vue 기준으로 전환
 - Vue 개발 서버와 Spring API 서버의 개발 실행 방식을 정리한다.
 - 운영 빌드 산출물을 Spring 정적 리소스로 서빙할지, 프론트/백엔드 분리 배포로 둘지 결정한다.
 - Vue Router history mode 새로고침 대응을 Spring fallback 설정으로 처리한다.
-- 기존 JSP route와 Vue route가 충돌하지 않도록 점진 전환 경로를 정리한다.
+- 기존 JSP route는 `/legacy/**`로 분리하고, Vue route는 Spring fallback을 통해 `index.html`로 전달한다.
 - `/api/v1/**`, `/batch/**`, `/swagger-ui/**`는 fallback 대상에서 제외한다.
 
 검증:
@@ -385,5 +385,9 @@ docs(plan): Vue 전환 결과와 남은 JSP 정리 기준 문서화
 - 챌린지 생성/참여/진행률/탈퇴/삭제 화면 전환
 - 소셜 팔로우/언팔로우/추천/리더보드 화면 전환
 - Vite 개발 서버의 Spring API proxy 구성
+- `pnpm build` 산출물을 `src/main/resources/static`으로 출력하도록 구성
+- 기존 JSP MVC 화면 컨트롤러를 `/legacy/**` 경로로 분리
+- `/`, `/home`, `/auth/*`, `/meals*`, `/profile`, `/coach`, `/community`, `/challenges`, `/social` Vue route를 `index.html`로 forward
+- 세션 필터에서 SPA 문서 route는 공개하고, 실제 데이터 접근은 `/api/v1/**` 세션 인증으로 유지
 
-아직 실제 JSP 파일과 기존 MVC 화면 컨트롤러는 삭제하지 않았다. 브라우저 검증과 Spring 빌드 검증이 끝난 뒤 JSP 제거 또는 라우트 완전 분리 여부를 별도 커밋에서 결정한다.
+JSP 파일은 삭제하지 않고 레거시 확인용으로 유지한다. 기존 MVC 화면 컨트롤러는 `/legacy/**` 아래로 이동했으므로 일반 사용자 경로는 Vue SPA가 담당한다. 브라우저 검증과 Spring 빌드 검증이 끝난 뒤 JSP 파일 제거 여부를 별도 커밋에서 결정한다.

@@ -39,7 +39,7 @@ public class ProfileController {
         this.userService = userService;
     }
 
-    @GetMapping("/profile")
+    @GetMapping("/legacy/profile")
     public String profile(HttpServletRequest request, Model model) {
         User user = getLoginUser(request);
 
@@ -47,7 +47,7 @@ public class ProfileController {
         return "profile/index";
     }
 
-    @PostMapping("/profile")
+    @PostMapping("/legacy/profile")
     public String updateProfile(HttpServletRequest request, Model model) {
         User user = getLoginUser(request);
 
@@ -61,7 +61,7 @@ public class ProfileController {
             HttpSession newSession = request.getSession(true);
             SessionUtils.flash(newSession, "info", "계정이 비활성화되었습니다.");
 
-            return "redirect:/auth/login";
+            return "redirect:/legacy/auth/login";
         }
 
         ServiceResult<User> result = userService.updateProfile(
@@ -82,7 +82,7 @@ public class ProfileController {
         }
 
         SessionUtils.flash(request.getSession(), "success", "프로필을 수정했습니다.");
-        return "redirect:/profile";
+        return "redirect:/legacy/profile";
     }
 
     private String profileWithError(Model model, User user, String errorMessage) {

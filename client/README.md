@@ -30,6 +30,7 @@ pnpm install
 ```
 
 Spring Boot API 서버는 기본값 `http://localhost:8080`에서 실행합니다. Vite 개발 서버는 `/api`, `/batch`, `/swagger-ui`, `/v3/api-docs` 요청을 Spring 서버로 proxy합니다.
+운영 빌드는 Spring Boot가 바로 서빙할 수 있도록 `../src/main/resources/static`에 생성됩니다.
 
 ### Compile and Hot-Reload for Development
 

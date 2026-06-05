@@ -5,7 +5,7 @@
 - 기본 주소: `http://localhost:8080`
 - 인증 방식: 세션 기반 로그인
 - 세션 키: `loginUserId`
-- 뷰 반환: 기존 Spring MVC 컨트롤러는 JSP View 또는 Redirect
+- 뷰 반환: 일반 사용자 화면 경로는 Vue SPA `index.html`로 forward, 기존 JSP MVC 컨트롤러는 `/legacy/**`에서 JSP View 또는 Redirect
 - JSON 반환: Vue SPA 전환을 위해 `/api/v1/**` REST API가 확장됨
 - `PATCH`, `DELETE`는 `spring.mvc.hiddenmethod.filter.enabled=true` 설정에 따라 HTML form의 hidden `_method` 방식 사용 가능
 
@@ -14,9 +14,21 @@
 다음 경로를 제외하면 로그인 필요다.
 
 - `/`
+- `/home`
 - `/auth/login`
 - `/auth/signup`
 - `/auth/logout`
+- `/meals`
+- `/meals/detail`
+- `/meals/new`
+- `/meals/edit`
+- `/profile`
+- `/coach`
+- `/community`
+- `/challenges`
+- `/social`
+- `/index.html`
+- `/legacy/auth/**`
 - `/assets/**`
 - `/css/**`
 - `/js/**`
@@ -25,7 +37,7 @@
 - `/favicon.ico`
 - `/error`
 
-단, `/`와 `/home`은 컨트롤러 내부에서 다시 로그인 사용자를 확인하므로 실질적으로는 인증이 필요하다.
+SPA 문서 route는 공개되어 있지만, 화면 데이터는 `/api/v1/**` 호출에서 세션 인증을 다시 받는다.
 
 ### 1.2 미인증 응답
 
@@ -272,7 +284,7 @@ Vue SPA는 세션 쿠키 기반으로 다음 JSON API를 사용한다.
 | DELETE | `/api/v1/social/following/{targetUserId}` | 언팔로우 |
 | GET | `/api/v1/health` | API 상태 확인 |
 
-개발 중 `client` Vite 서버는 `/api`, `/batch`, `/swagger-ui`, `/v3/api-docs`를 Spring Boot 서버(`http://localhost:8080`)로 proxy한다.
+개발 중 `client` Vite 서버는 `/api`, `/batch`, `/swagger-ui`, `/v3/api-docs`를 Spring Boot 서버(`http://localhost:8080`)로 proxy한다. `pnpm build`는 Vue SPA 산출물을 `src/main/resources/static`에 생성하므로 Spring Boot가 `index.html`과 정적 asset을 함께 서빙할 수 있다.
 
 ## 11. 예외 및 오류 응답
 
@@ -293,4 +305,4 @@ Vue SPA는 세션 쿠키 기반으로 다음 JSON API를 사용한다.
 
 ## 12. 빠른 요약
 
-이 프로젝트는 기존 JSP 화면/폼 컨트롤러를 유지하면서, `client` Vue SPA가 같은 기능을 사용할 수 있도록 `/api/v1/**` REST API를 확장한 상태다.
+이 프로젝트는 일반 사용자 화면을 `client` Vue SPA로 전환하고, 같은 기능을 사용할 수 있도록 `/api/v1/**` REST API를 확장한 상태다. 기존 JSP 화면/폼 컨트롤러는 레거시 확인용으로 `/legacy/**` 경로에 남아 있다.
