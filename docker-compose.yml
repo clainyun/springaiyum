@@ -1,0 +1,55 @@
+services:
+  database:
+    build:
+      context: .
+      dockerfile: database/Dockerfile
+    image: vueyum-mysql:latest
+    container_name: vueyum-database
+    environment:
+      MYSQL_DATABASE: ssafy_yumyumcoach
+      MYSQL_USER: ssafy
+      MYSQL_PASSWORD: ssafy
+      MYSQL_ROOT_PASSWORD: ssafy
+      TZ: Asia/Seoul
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    restart: unless-stopped
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vueyum-spring:latest
+    container_name: vueyum-server
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: "jdbc:mysql://database:3306/ssafy_yumyumcoach?serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
+      SPRING_DATASOURCE_USERNAME: ssafy
+      SPRING_DATASOURCE_PASSWORD: ssafy
+      SPRING_BATCH_JOB_ENABLED: "false"
+      TZ: Asia/Seoul
+    ports:
+      - "8080:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    image: vueyum-client:latest
+    container_name: vueyum-client
+    environment:
+      VITE_PROXY_TARGET: http://server:8080
+      TZ: Asia/Seoul
+    ports:
+      - "5173:5173"
+    depends_on:
+      - server
+    restart: unless-stopped
