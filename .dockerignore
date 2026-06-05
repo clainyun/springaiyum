@@ -1,0 +1,6 @@
+**
+!src/
+!src/main/
+!src/main/resources/
+!src/main/resources/SSAFY_COACH_Schema.sql
+!src/main/resources/SSAFY_COACH_Demo_Dump.sql
