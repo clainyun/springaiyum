@@ -49,7 +49,7 @@ Spring Batch 기반 영양성분 데이터 적재 기능은 유지됩니다. 외
   - `database/Dockerfile`로 MySQL 초기 스키마와 demo data 적재 환경을 구성했습니다.
 
 ```text
-email: demo@yamyam.com
+email: demo@yumyum.com
 password: Demo1234!
 ```
 
