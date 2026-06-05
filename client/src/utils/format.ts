@@ -6,6 +6,17 @@ export function mealTypeLabel(type: string) {
   return '기타'
 }
 
+export function goalLabel(goal: string) {
+  if (goal === 'health') return '건강 유지'
+  if (goal === 'diet') return '체중 감량'
+  if (goal === 'muscle') return '근육 증가'
+  return '사용자 목표'
+}
+
+export function genderLabel(gender: string) {
+  return gender === 'female' ? '여성' : '남성'
+}
+
 export function formatDate(value: string | null | undefined) {
   if (!value) {
     return '-'

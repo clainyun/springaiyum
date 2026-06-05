@@ -52,6 +52,15 @@ export type UpdateUserProfileRequest = {
   healthNote: string
 }
 
+export type UserProfileDashboard = {
+  user: UserProfile
+  dailyGoal: DailyGoal
+  mealCount: number
+  followingCount: number
+  followerCount: number
+  joinedChallengeCount: number
+}
+
 export type FoodResponse = {
   code: string
   name: string
