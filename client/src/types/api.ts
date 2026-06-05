@@ -95,9 +95,27 @@ export type MealSummary = {
   nutrition: MealNutrition
 }
 
+export type DailyGoal = {
+  calories: number
+  carbs: number
+  protein: number
+  fat: number
+}
+
+export type MealAnalysis = {
+  nutrition: MealNutrition
+  headline: string
+  nextAction: string
+  grade: string
+  score: number
+  insights: string[]
+}
+
 export type MealDetail = MealSummary & {
   userId: string
   foods: MealFood[]
+  analysis: MealAnalysis | null
+  dailyGoal: DailyGoal | null
   createdAt: string
   updatedAt: string
 }

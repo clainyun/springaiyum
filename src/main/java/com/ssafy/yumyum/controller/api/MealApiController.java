@@ -78,7 +78,12 @@ public class MealApiController {
             throw new CustomException(404, "식단을 찾을 수 없습니다.");
         }
 
-        return ResponseEntity.ok(MealDetailResponse.from(meal, mealService.summarize(meal.getFoods())));
+        return ResponseEntity.ok(MealDetailResponse.from(
+                meal,
+                mealService.summarize(meal.getFoods()),
+                mealService.analyzeMeal(meal, user),
+                mealService.calculateDailyGoal(user)
+        ));
     }
 
     @PostMapping
@@ -99,7 +104,12 @@ public class MealApiController {
 
         Meal meal = result.getData();
         return ResponseEntity.status(201)
-                .body(MealDetailResponse.from(meal, mealService.summarize(meal.getFoods())));
+                .body(MealDetailResponse.from(
+                        meal,
+                        mealService.summarize(meal.getFoods()),
+                        mealService.analyzeMeal(meal, user),
+                        mealService.calculateDailyGoal(user)
+                ));
     }
 
     @PutMapping("/{mealId}")
@@ -122,7 +132,12 @@ public class MealApiController {
         }
 
         Meal meal = result.getData();
-        return ResponseEntity.ok(MealDetailResponse.from(meal, mealService.summarize(meal.getFoods())));
+        return ResponseEntity.ok(MealDetailResponse.from(
+                meal,
+                mealService.summarize(meal.getFoods()),
+                mealService.analyzeMeal(meal, user),
+                mealService.calculateDailyGoal(user)
+        ));
     }
 
     @DeleteMapping("/{mealId}")
