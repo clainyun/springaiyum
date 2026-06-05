@@ -24,7 +24,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.yumyum.exception.ApiExceptionHandler;
 import com.ssafy.yumyum.model.User;
+import com.ssafy.yumyum.repository.UserRepository;
 import com.ssafy.yumyum.service.AuthService;
+import com.ssafy.yumyum.service.ChallengeService;
+import com.ssafy.yumyum.service.MealService;
+import com.ssafy.yumyum.service.SocialService;
 import com.ssafy.yumyum.service.UserService;
 import com.ssafy.yumyum.util.ServiceResult;
 
@@ -44,6 +48,18 @@ class AuthUserApiControllerTest {
 
     @MockBean
     private UserService userService;
+
+    @MockBean
+    private UserRepository userRepository;
+
+    @MockBean
+    private MealService mealService;
+
+    @MockBean
+    private SocialService socialService;
+
+    @MockBean
+    private ChallengeService challengeService;
 
     @Test
     void loginSuccess() throws Exception {
