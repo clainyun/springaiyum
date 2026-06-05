@@ -1,66 +1,52 @@
-# YumYumCoach BatchYum
+# YumYumCoach VueYum
 
-YumYumCoach 프로젝트에 **Spring Batch 기반 영양성분 데이터 적재 기능**을 추가한 버전입니다.
+YumYumCoach 프로젝트의 기존 JSP 사용자 화면을 **Vue 3 + Vite SPA**로 전환한 버전입니다.
 
-기존 README가 Spring MVC/JSP 프로젝트를 REST API로 전환한 변경사항을 중심으로 설명했다면, 이 README는 `batchyum`에서 추가된 배치 처리, 데이터 적재, 리포트 생성, Swagger 테스트 편의 기능을 중심으로 정리합니다.
+기존 README가 Spring Batch 기반 영양성분 데이터 적재 기능을 중심으로 설명했다면, 이 README는 `origin/master` 이후 `vueyum`에서 진행한 JSP 화면의 Vue 전환, REST API 보강, Spring 정적 리소스 연동, 개발/배포 실행 구조 변경을 중심으로 정리합니다.
 
 ## 프로젝트 개요
 
 YumYumCoach는 사용자의 식단 기록과 음식 영양 정보를 관리하는 Spring Boot 기반 애플리케이션입니다.
 
-현재 일반 사용자 화면은 기존 JSP에서 `client` 디렉터리의 Vue 3 + Vite SPA로 전환되었습니다. Spring Boot는 `pnpm build`로 생성된 `src/main/resources/static/index.html`을 `/`, `/home`, `/auth/*`, `/meals*`, `/profile`, `/coach`, `/community`, `/challenges`, `/social` 경로에 forward합니다. 기존 JSP 화면 컨트롤러와 JSP 파일은 레거시 확인용으로 `/legacy/**` 경로에 남아 있습니다.
+이번 변경의 핵심은 일반 사용자 화면을 기존 JSP에서 `client` 디렉터리의 Vue 3 + Vite SPA로 전환한 것입니다. Spring Boot는 `pnpm build`로 생성된 `src/main/resources/static/index.html`을 `/`, `/home`, `/auth/*`, `/meals*`, `/profile`, `/coach`, `/community`, `/challenges`, `/social` 경로에 forward합니다. 기존 JSP 화면 컨트롤러와 JSP 파일은 레거시 확인용으로 `/legacy/**` 경로에 남아 있습니다.
 
-이번 변경의 핵심은 외부 영양성분 원천 데이터 파일을 읽어 YumYumCoach의 `food_nutrition` 테이블에 안정적으로 적재하는 배치 파이프라인입니다. 배치는 원본 데이터를 바로 최종 테이블에 넣지 않고, staging 테이블에 먼저 저장한 뒤 정제와 검증을 거쳐 upsert합니다.
+Spring Batch 기반 영양성분 데이터 적재 기능은 유지됩니다. 외부 영양성분 원천 데이터 파일을 읽어 staging 테이블에 저장한 뒤 정제와 검증을 거쳐 `food_nutrition` 테이블에 upsert합니다.
 
 > [!NOTE]
 > 외부 영양성분 데이터 출처: [식품의약품안전처 식품영양성분데이터베이스](https://various.foodsafetykorea.go.kr/nutrient/)
 
 ## 주요 변경점
 
-- **영양성분 데이터 적재**
-  - Spring Batch를 사용해 외부 영양성분 원천 데이터를 YumYumCoach DB에 적재합니다.
-  - 식품명, 분류, 중량, 열량, 단백질, 지방, 탄수화물, 당류, 나트륨 등 영양 정보를 `food_nutrition`에 저장합니다.
-  - CSV와 XLSX 파일을 모두 처리할 수 있습니다.
-  - 대용량 XLSX 파일은 Apache POI 이벤트 기반 스트리밍 방식으로 읽습니다.
-
-- **배치 처리 파이프라인**
-  - 처리 흐름은 `파일 읽기 -> staging 적재 -> 정제 -> food_nutrition upsert -> 리포트 생성`입니다.
-  - 기본 chunk size는 100건입니다.
-  - 원본 row는 `nutrition_import_staging`에 저장되어 처리 상태를 추적할 수 있습니다.
-  - 정상 처리 row는 `DONE`, 실패 row는 `FAILED`로 기록됩니다.
-  - 실패 row에는 오류 메시지를 남겨 재처리와 원인 분석이 가능하도록 했습니다.
-
-- **중복 방지와 멱등 처리**
-  - 최종 적재는 `food_code` 기준 upsert로 처리합니다.
-  - 같은 데이터를 여러 번 실행해도 중복 row가 계속 쌓이지 않습니다.
-  - 원본 식품코드가 있으면 그대로 사용합니다.
-  - 식품코드가 없으면 `sourceName`, `foodName`, `category`, `weight`를 기반으로 안정적인 식별 코드를 생성합니다.
-
-- **배치 실행과 운영**
-  - 서버 시작 시 배치가 자동 실행되지 않습니다.
-  - Swagger 또는 HTTP 요청으로 수동 실행합니다.
-  - 배치 실행 시 `sourcePath`, `sourceName`, `chunkSize`, `runId`를 전달할 수 있습니다.
-  - 실패 또는 중단된 배치는 `executionId` 기준으로 재시작할 수 있습니다.
-
-- **PDF 리포트**
-  - 배치 완료 후 PDF 리포트를 자동 생성합니다.
-  - PDF에는 실행 ID, 원본 파일 정보, 총 처리 건수, 성공/실패/대기 건수, 실패 row 샘플이 포함됩니다.
-  - 저장 경로는 다음과 같습니다.
-
-```text
-reports/batch/nutrition/nutrition-import-{jobExecutionId}.pdf
-```
-
-- **Swagger 테스트 편의**
-  - Swagger UI에서 기존 REST API와 배치 API를 함께 확인할 수 있습니다.
-  - 세션 인증용 `JSESSIONID` 쿠키 스키마를 문서화했습니다.
-  - 로그인 API에는 demo 계정 요청 예시가 포함되어 있습니다.
-
 - **Vue SPA 전환**
+  - `client` 디렉터리에 Vue 3 + Vite + TypeScript 프로젝트를 추가했습니다.
   - `client/src/views`의 Vue 화면이 기존 JSP 사용자 화면을 대체합니다.
+  - 공통 레이아웃, Router, Pinia 세션 store, alert 상태를 Vue 기준으로 구성했습니다.
   - `client/src/composables`의 Axios API composable이 `/api/v1/**` REST API를 호출합니다.
   - 세션 기반 인증은 유지하며, JWT/token refresh/interceptor 기반 인증은 사용하지 않습니다.
+
+- **JSP 화면 기능 이전**
+  - 로그인, 회원가입, 로그아웃 화면을 Vue form으로 전환했습니다.
+  - 식단 목록/상세/등록/수정/삭제 화면을 Vue Router와 route query 기반 흐름으로 전환했습니다.
+  - 프로필 조회/수정, 계정 비활성화, 계정 삭제 화면을 Vue로 전환했습니다.
+  - 홈/코치 대시보드, 커뮤니티, 챌린지, 소셜 화면을 Vue로 전환했습니다.
+
+- **REST API 보강**
+  - 홈/코치 대시보드 API를 Vue 화면에서 사용할 수 있는 JSON API로 추가했습니다.
+  - 커뮤니티 게시글/댓글 CRUD API를 추가했습니다.
+  - 챌린지 생성/참여/진행률 수정/탈퇴/삭제 API를 추가했습니다.
+  - 소셜 팔로우/언팔로우, 추천 사용자, 팔로워/팔로잉, 리더보드 API를 추가했습니다.
+  - 프로필 대시보드 응답 DTO를 보강했습니다.
+
+- **Spring 연동과 레거시 분리**
   - `pnpm build` 산출물은 `src/main/resources/static`에 생성되어 Spring Boot에서 바로 서빙됩니다.
+  - SPA route 새로고침을 위해 Spring MVC fallback을 `index.html`로 연결했습니다.
+  - `/api/v1/**`, `/batch/**`, `/swagger-ui/**`, `/v3/api-docs/**`는 Vue fallback 대상에서 제외했습니다.
+  - 기존 JSP MVC 컨트롤러는 `/legacy/**` 경로로 이동했습니다.
+
+- **개발/실행 환경 정리**
+  - Vite 개발 서버가 `/api`, `/batch`, `/swagger-ui`, `/v3/api-docs` 요청을 Spring Boot로 proxy합니다.
+  - `client/Dockerfile`로 Vue 개발 서버 실행 환경을 분리했습니다.
+  - `database/Dockerfile`로 MySQL 초기 스키마와 demo data 적재 환경을 구성했습니다.
 
 ```text
 email: demo@yamyam.com
@@ -69,21 +55,22 @@ password: Demo1234!
 
 ## AS-IS
 
-- 영양성분 데이터는 애플리케이션 DB에 수동으로 넣거나 별도 SQL dump에 의존해야 했습니다.
-- CSV/XLSX 원천 데이터 파일을 반복적으로 읽고 정제하는 표준 파이프라인이 없었습니다.
-- 대용량 영양성분 파일을 안전하게 나눠 처리하는 구조가 없었습니다.
-- 중복 수집 방지, 실패 row 추적, 실행별 처리 결과 요약이 부족했습니다.
-- 배치 실행 결과를 운영자가 확인할 수 있는 별도 리포트 산출물이 없었습니다.
-- Swagger에는 일반 REST API 중심의 문서만 있었고, 배치 실행 흐름과 테스트 계정 안내가 부족했습니다.
+- 일반 사용자 화면이 JSP와 Spring MVC view controller에 묶여 있었습니다.
+- 화면 이동, form submit, redirect 흐름이 서버 렌더링 중심이었습니다.
+- 인증, 식단, 프로필 외 영역은 Vue에서 재사용할 JSON API가 부족했습니다.
+- 홈, 코치, 커뮤니티, 챌린지, 소셜 기능 일부는 JSP 컨트롤러에 의존했습니다.
+- SPA route 직접 접근과 새로고침을 처리하는 Spring fallback 구성이 없었습니다.
+- 프론트엔드 개발 서버, Spring API 서버, DB 실행 환경이 분리되어 정리되지 않았습니다.
 
 ## TO-BE
 
-- Spring Batch Job/Step/Chunk 기반으로 영양성분 데이터를 안정적으로 적재합니다.
-- 원본 데이터를 staging 테이블에 남겨 row 단위 처리 상태를 추적합니다.
-- 정제 성공 데이터는 `food_nutrition`에 upsert하여 멱등성을 보장합니다.
-- 정제 실패 데이터는 실패 상태와 오류 메시지를 남겨 재처리 근거로 사용합니다.
-- 실행 결과는 `nutrition_import_report`에 저장하고 PDF 리포트로도 생성합니다.
-- Swagger에서 demo 계정으로 로그인한 뒤 배치 실행 API를 바로 테스트할 수 있습니다.
+- 일반 사용자 화면은 Vue 3 + Vite SPA가 담당합니다.
+- Spring Boot는 SPA 정적 산출물과 `/api/v1/**` REST API를 함께 제공합니다.
+- 기존 JSP 화면은 `/legacy/**` 경로에서 확인용으로만 유지합니다.
+- Vue 화면은 Pinia 세션 store와 Axios composable을 통해 세션 기반 API를 호출합니다.
+- 홈, 코치, 커뮤니티, 챌린지, 소셜 기능은 Vue에서 사용할 REST API로 보강합니다.
+- 개발 중에는 Vite proxy로 Spring API를 호출하고, 운영 빌드는 Spring static resource로 서빙합니다.
+- Vue 개발 서버와 MySQL 초기화용 Dockerfile을 제공해 실행 환경을 분리합니다.
 
 ## 배치 실행 API
 
@@ -191,9 +178,14 @@ src/main/java/com/ssafy/yumyum
 │  └─ NutritionImportPdfReportTasklet.java
 ├─ controller/api
 │  ├─ AuthApiController.java
+│  ├─ ChallengeApiController.java
+│  ├─ CommunityApiController.java
+│  ├─ DashboardApiController.java
 │  ├─ FoodApiController.java
+│  ├─ HealthApiController.java
 │  ├─ MealApiController.java
 │  ├─ NutritionBatchApiController.java
+│  ├─ SocialApiController.java
 │  └─ UserApiController.java
 ├─ controller
 │  ├─ SpaController.java
@@ -207,7 +199,11 @@ client
 ├─ src/views
 ├─ src/composables
 ├─ src/router
-└─ src/stores
+├─ src/stores
+└─ Dockerfile
+
+database
+└─ Dockerfile
 ```
 
 ## 실행 환경
@@ -281,12 +277,11 @@ server.servlet.encoding.force=true
 
 ## 관련 파일
 
-- [배치 구현 계획](./docs/PLAN.md)
-- [교육 내용 정리](./docs/EDUCATION.md)
-- [브레인스토밍](./docs/BRAINSTROMING.md)
+- [Vue 전환 구현 계획](./docs/PLAN.md)
+- [Vue 활용 제한](./docs/LIMIT.md)
+- [API 문서](./docs/API.md)
 - [프로젝트 분석](./docs/RESEARCH.md)
 - [DB 스키마](./assets/ssafy_yumyumcoach.sql)
-- [데모 덤프](./assets/ssafy_yumyumcoach-demo-dump.sql)
 - [ERD 이미지](./assets/ssafy_yumyumcoach.png)
 - [Swagger 캡처](./assets/swagger.png)
 
