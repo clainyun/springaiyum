@@ -1,11 +1,14 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import AppAlert from '@/components/common/AppAlert.vue'
+import AppFooter from '@/components/common/AppFooter.vue'
+import AppNavbar from '@/components/common/AppNavbar.vue'
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <AppNavbar />
+  <AppAlert />
+  <RouterView />
+  <AppFooter />
 </template>
 
 <style scoped></style>
