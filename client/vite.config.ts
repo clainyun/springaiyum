@@ -6,13 +6,30 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-    vue(),
-    vueDevTools(),
-  ],
+  plugins: [vue(), vueDevTools()],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/batch': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/swagger-ui': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/v3/api-docs': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
     },
   },
 })

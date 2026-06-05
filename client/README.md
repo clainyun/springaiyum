@@ -1,6 +1,6 @@
-# client
+# YumYum MVC Vue Client
 
-This template should help get you started developing with Vue 3 in Vite.
+JSP 화면을 Vue 3 + Vite SPA로 옮긴 클라이언트입니다. 화면은 `src/views`에 있고, Spring REST API 호출은 `src/composables`의 API composable을 통해서만 수행합니다.
 
 ## Recommended IDE Setup
 
@@ -28,6 +28,8 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 ```sh
 pnpm install
 ```
+
+Spring Boot API 서버는 기본값 `http://localhost:8080`에서 실행합니다. Vite 개발 서버는 `/api`, `/batch`, `/swagger-ui`, `/v3/api-docs` 요청을 Spring 서버로 proxy합니다.
 
 ### Compile and Hot-Reload for Development
 
