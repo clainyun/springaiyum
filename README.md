@@ -8,6 +8,8 @@ YumYumCoach 프로젝트에 **Spring Batch 기반 영양성분 데이터 적재 
 
 YumYumCoach는 사용자의 식단 기록과 음식 영양 정보를 관리하는 Spring Boot 기반 애플리케이션입니다.
 
+현재 일반 사용자 화면은 기존 JSP에서 `client` 디렉터리의 Vue 3 + Vite SPA로 전환되었습니다. Spring Boot는 `pnpm build`로 생성된 `src/main/resources/static/index.html`을 `/`, `/home`, `/auth/*`, `/meals*`, `/profile`, `/coach`, `/community`, `/challenges`, `/social` 경로에 forward합니다. 기존 JSP 화면 컨트롤러와 JSP 파일은 레거시 확인용으로 `/legacy/**` 경로에 남아 있습니다.
+
 이번 변경의 핵심은 외부 영양성분 원천 데이터 파일을 읽어 YumYumCoach의 `food_nutrition` 테이블에 안정적으로 적재하는 배치 파이프라인입니다. 배치는 원본 데이터를 바로 최종 테이블에 넣지 않고, staging 테이블에 먼저 저장한 뒤 정제와 검증을 거쳐 upsert합니다.
 
 > [!NOTE]
@@ -53,6 +55,12 @@ reports/batch/nutrition/nutrition-import-{jobExecutionId}.pdf
   - Swagger UI에서 기존 REST API와 배치 API를 함께 확인할 수 있습니다.
   - 세션 인증용 `JSESSIONID` 쿠키 스키마를 문서화했습니다.
   - 로그인 API에는 demo 계정 요청 예시가 포함되어 있습니다.
+
+- **Vue SPA 전환**
+  - `client/src/views`의 Vue 화면이 기존 JSP 사용자 화면을 대체합니다.
+  - `client/src/composables`의 Axios API composable이 `/api/v1/**` REST API를 호출합니다.
+  - 세션 기반 인증은 유지하며, JWT/token refresh/interceptor 기반 인증은 사용하지 않습니다.
+  - `pnpm build` 산출물은 `src/main/resources/static`에 생성되어 Spring Boot에서 바로 서빙됩니다.
 
 ```text
 email: demo@yamyam.com
@@ -187,10 +195,19 @@ src/main/java/com/ssafy/yumyum
 │  ├─ MealApiController.java
 │  ├─ NutritionBatchApiController.java
 │  └─ UserApiController.java
+├─ controller
+│  ├─ SpaController.java
+│  └─ *Controller.java  # /legacy/** JSP 확인용 MVC 컨트롤러
 ├─ repository
 ├─ service
 ├─ model
 └─ config
+
+client
+├─ src/views
+├─ src/composables
+├─ src/router
+└─ src/stores
 ```
 
 ## 실행 환경
@@ -200,7 +217,9 @@ src/main/java/com/ssafy/yumyum
 - Spring Batch
 - Maven
 - MySQL
-- JSP
+- Vue 3 + Vite
+- pnpm
+- JSP(`/legacy/**` 확인용)
 - JDBC
 - Swagger/OpenAPI
 - Apache POI
@@ -210,8 +229,23 @@ src/main/java/com/ssafy/yumyum
 1. MySQL에서 `ssafy_yumyumcoach` 스키마를 준비합니다.
   - `assets/ssafy_yumyumcoach.sql` 을 실행합니다.
 2. `src/main/resources/application.properties`의 DB 계정 정보를 확인합니다.
-3. `YumyumApplication.java`를 실행합니다.
-4. 브라우저에서 `http://localhost:8080` 또는 Swagger UI에 접속합니다.
+3. Vue 정적 산출물을 생성합니다.
+
+```sh
+cd client
+pnpm install
+pnpm build
+```
+
+4. `YumyumApplication.java`를 실행합니다.
+5. 브라우저에서 `http://localhost:8080` 또는 Swagger UI에 접속합니다.
+
+개발 중에는 Spring Boot를 `http://localhost:8080`에서 실행한 뒤 별도 터미널에서 Vite 개발 서버를 사용할 수 있습니다.
+
+```sh
+cd client
+pnpm dev
+```
 
 ## application.properties 주요 설정
 
