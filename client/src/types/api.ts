@@ -198,3 +198,44 @@ export type CoachDashboard = {
   recentAnalyses: CoachAnalysisCard[]
   challenges: CoachChallengeCard[]
 }
+
+export type CommunityComment = {
+  id: string
+  postId: string
+  userId: string
+  authorName: string
+  content: string
+  createdAt: string
+  canEdit: boolean
+}
+
+export type CommunityPost = {
+  id: string
+  userId: string
+  authorName: string
+  category: string
+  categoryLabel: string
+  linkedMealId: string | null
+  title: string
+  content: string
+  createdAt: string
+  canEdit: boolean
+  comments: CommunityComment[]
+}
+
+export type CommunityBoard = {
+  selectedCategory: string
+  meals: MealSummary[]
+  posts: CommunityPost[]
+}
+
+export type CommunityPostRequest = {
+  category: string
+  linkedMealId: string
+  title: string
+  content: string
+}
+
+export type CommunityCommentRequest = {
+  content: string
+}
