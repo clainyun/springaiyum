@@ -280,3 +280,21 @@ export type ChallengeRequest = {
   targetCount: number
   endDate: string
 }
+
+export type SocialUserCard = {
+  id: string
+  email: string
+  nickname: string
+  goal: string
+  goalLabel: string
+  goalShortLabel: string
+  followerCount: number
+  following: boolean
+}
+
+export type SocialDashboard = {
+  suggestions: SocialUserCard[]
+  following: SocialUserCard[]
+  followers: SocialUserCard[]
+  leaderboard: SocialUserCard[]
+}
