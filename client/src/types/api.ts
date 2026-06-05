@@ -239,3 +239,44 @@ export type CommunityPostRequest = {
 export type CommunityCommentRequest = {
   content: string
 }
+
+export type ChallengeParticipant = {
+  userId: string
+  nickname: string
+  progress: number
+}
+
+export type ChallengeMembership = {
+  id: string
+  progress: number
+  status: string
+}
+
+export type ChallengeItem = {
+  id: string
+  title: string
+  description: string
+  category: string
+  targetCount: number
+  periodLabel: string
+  owned: boolean
+  membership: ChallengeMembership | null
+  statusLabel: string
+  participants: ChallengeParticipant[]
+}
+
+export type ChallengeBoard = {
+  joinedCount: number
+  completedCount: number
+  createdCount: number
+  challengeCount: number
+  challenges: ChallengeItem[]
+}
+
+export type ChallengeRequest = {
+  title: string
+  description: string
+  category: string
+  targetCount: number
+  endDate: string
+}
