@@ -135,3 +135,66 @@ export type MealSearchParams = {
   mealType?: string
   sortKey?: string
 }
+
+export type ChallengeSummary = {
+  id: string
+  title: string
+  description: string
+  targetCount: number
+  endDate: string
+}
+
+export type CoachSummary = {
+  summary: string
+  recovery: string
+  recentAnalyses: MealAnalysis[]
+}
+
+export type HomeDashboard = {
+  recentMeals: MealSummary[]
+  todaySummary: MealNutrition
+  dailyGoal: DailyGoal
+  coachAdvice: CoachSummary
+  activeChallenges: ChallengeSummary[]
+  followingCount: number
+  followerCount: number
+}
+
+export type CoachWorkoutSession = {
+  title: string
+  detail: string
+  intensity: string
+}
+
+export type CoachAnalysisCard = {
+  headline: string
+  nextAction: string
+  grade: string
+  score: number
+}
+
+export type CoachChallengeCard = {
+  id: string
+  title: string
+  description: string
+  progress: number
+  targetCount: number
+}
+
+export type CoachDashboard = {
+  summary: string
+  recovery: string
+  todaySummary: {
+    calories: number
+    protein: number
+  }
+  dailyGoal: {
+    calories: number
+    protein: number
+  }
+  todayPct: number
+  sessions: CoachWorkoutSession[]
+  nextActions: string[]
+  recentAnalyses: CoachAnalysisCard[]
+  challenges: CoachChallengeCard[]
+}
