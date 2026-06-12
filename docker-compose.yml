@@ -31,6 +31,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ssafy
       SPRING_DATASOURCE_PASSWORD: ssafy
       SPRING_BATCH_JOB_ENABLED: "false"
+      GMS_API_KEY: ${GMS_API_KEY}
       TZ: Asia/Seoul
     ports:
       - "8080:8080"
