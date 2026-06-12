@@ -1,22 +1,19 @@
-# YumYumCoach VueYum + Spring AI
+# YumYumCoach Spring AI
 
 - `1541268` 윤다인 (팀장)
 - `1544345` 김동주
 
 ## 요약
 
-YumYumCoach 프로젝트의 기존 JSP 사용자 화면을 **Vue 3 + Vite SPA**로 전환한 버전에, **Spring AI + Google Gemini 기반 AI 영양 코치** 기능을 추가한 버전입니다.
+YumYumCoach 프로젝트에, **Spring AI + Google Gemini 기반 AI 영양 코치** 기능을 추가한 버전입니다.
 
-- 커뮤니티 기능이 관통 PJT 게시판 구현 요구사항에 대응합니다.
-- 기존 JSP로 구현된 프론트를 Vue.js로 포팅하였습니다.
-- **이번 주차 관통 프로젝트**: Spring AI를 적용하여 단일 Tool 호출, 다중 Tool 호출, Tool 결과 기반 AI 응답 생성 필수 요구사항을 모두 구현하였습니다.
+- Spring AI를 적용하여 단일 Tool 호출, 다중 Tool 호출, Tool 결과 기반 AI 응답 생성 필수 요구사항을 모두 구현하였습니다.
 - Docker Compose를 구성해두었으니, compose를 실행하면 서비스가 바로 실행됩니다.
   - MySQL 워크벤치 없이 mysql 이미지로 데이터베이스 서버를 구성하오니, 포트 충돌에 주의해야합니다.
   - Dockerfile을 이용한 Spring Boot 어플리케이션 이미지 구성 전, Multi-stage build로 Vue.js 프로젝트를 빌드하여 Spring Boot App의 static 폴더에 배치하여 런타임에 SPA를 서빙하는 형태입니다.
-  - `GMS_API_KEY` 환경변수를 설정한 뒤 실행해야 AI 기능이 정상 동작합니다.
+  - `GMS_API_KEY` 환경변수를 설정한 뒤 실행해야 AI 기능이 정상 동작합니다. (`.env` 파일을 통한 구성 권장)
 
 ```sh
-export GMS_API_KEY=your_gms_api_key
 docker compose up
 ```
 
