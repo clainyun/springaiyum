@@ -363,6 +363,12 @@ spring.ai.google.genai.chat.options.model=gemini-2.5-flash-lite
 
 ## 실행 화면
 
+### Swagger AI API
+
+<p align="center">
+  <img src="./src/main/resources/images/swagger-ai.png" alt="Swagger AI API" width="80%">
+</p>
+
 ### 단일 Tool 호출 — 음식 영양 검색 (F1203)
 
 <p align="center">
