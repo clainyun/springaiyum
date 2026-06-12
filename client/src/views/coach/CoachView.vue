@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useCoachDashboardApi } from '@/composables/useDashboardApis'
 import { useSessionStore } from '@/stores/session'
 import { intValue } from '@/utils/format'
+import { apiClient } from '@/composables/apiClient'
 
 const sessionStore = useSessionStore()
 const coachDashboardApi = useCoachDashboardApi()
@@ -15,6 +17,27 @@ async function loadCoachDashboard() {
 }
 
 void loadCoachDashboard()
+
+// ── Spring AI 질문 영역 ──────────────────────────────────────
+const aiQuestion = ref('')
+const aiAnswer = ref('')
+const aiLoading = ref(false)
+
+async function askAiCoach() {
+  if (!aiQuestion.value.trim()) return
+  aiLoading.value = true
+  aiAnswer.value = ''
+  try {
+    const res = await apiClient.get<{ answer: string }>('/api/v1/ai/coach', {
+      params: { userId: 'user_demo', question: aiQuestion.value },
+    })
+    aiAnswer.value = res.data.answer
+  } catch {
+    aiAnswer.value = 'AI 코치 응답을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.'
+  } finally {
+    aiLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -162,6 +185,47 @@ void loadCoachDashboard()
           </section>
         </div>
       </div>
+
+      <!-- ── Spring AI 질문 섹션 ───────────────────────────── -->
+      <section class="surface-card mt-4">
+        <div class="section-title">
+          <div>
+            <h5><i class="bi bi-stars me-2" style="color: var(--accent)"></i>AI 코치에게 질문하기</h5>
+            <div class="mini-note">식단·영양 데이터를 기반으로 Gemini AI가 개인화된 분석을 제공합니다.</div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <input
+            v-model="aiQuestion"
+            type="text"
+            class="form-control"
+            placeholder="오늘 내 식단을 분석해줘"
+            :disabled="aiLoading"
+            @keyup.enter="askAiCoach"
+          />
+          <button
+            class="btn btn-success"
+            style="white-space: nowrap"
+            :disabled="aiLoading || !aiQuestion.trim()"
+            @click="askAiCoach"
+          >
+            <span v-if="aiLoading">
+              <span class="spinner-border spinner-border-sm me-1" role="status"></span>분석 중...
+            </span>
+            <span v-else><i class="bi bi-send me-1"></i>AI 코치에게 질문하기</span>
+          </button>
+        </div>
+
+        <div v-if="aiAnswer" class="ai-callout mt-4">
+          <div class="fw-semibold mb-3">
+            <i class="bi bi-robot me-2" style="color: var(--brand)"></i>AI 코치 응답
+          </div>
+          <div style="white-space: pre-line; line-height: 1.75">{{ aiAnswer }}</div>
+        </div>
+      </section>
+      <!-- ─────────────────────────────────────────────────── -->
+
     </div>
   </main>
 </template>

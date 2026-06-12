@@ -1,1 +1,0 @@
-import{c as e,s as t}from"./index-D4FK21IO.js";async function n(){return(await e.get(`/api/v1/dashboard/home`)).data}async function r(){return(await e.get(`/api/v1/coach/dashboard`)).data}function i(){return t(n)}function a(){return t(r)}export{i as n,a as t};
